@@ -60,7 +60,7 @@ git lfs install
 
 3. Clonez le repository
 ```bash
-git clone [url-du-repo]
+git clone https://github.com/AbdoulDiouf2/mikana
 cd mikana
 ```
 
@@ -107,8 +107,13 @@ npm run dev
 
 ## 👥 Équipe
 
-- 
--
+ESIGELEC :
+- BOUGA Paule Audrey
+- BOHI Franck Junior
+- DIOUF Abdoul Ahad
+- GANKPEZOUNDE Ange
+- NOUBOM Michelle D'Or
+- SOW Aminata
 
 ## 📄 License
 
