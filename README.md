@@ -41,21 +41,40 @@ Cette application permet de prédire les futures commandes de linge en utilisant
 
 ## 🚦 Installation
 
-1. Clonez le repository
+1. Installez Git LFS (obligatoire pour les fichiers volumineux)
+```bash
+# Windows (avec chocolatey)
+choco install git-lfs
+
+# Mac (avec homebrew)
+brew install git-lfs
+
+# Linux (Ubuntu/Debian)
+sudo apt install git-lfs
+```
+
+2. Initialisez Git LFS
+```bash
+git lfs install
+```
+
+3. Clonez le repository
 ```bash
 git clone [url-du-repo]
 cd mikana
 ```
 
-2. Installez les dépendances frontend
+4. Installez les dépendances frontend
 ```bash
 npm install
 ```
 
-3. Installez les dépendances Python
+5. Installez les dépendances Python
 ```bash
 pip install -r requirements.txt
 ```
+
+⚠️ **Note Importante**: Ce projet utilise Git LFS pour gérer les fichiers volumineux (notamment les données CSV). Sans Git LFS, vous n'aurez pas accès aux fichiers de données complets nécessaires au fonctionnement de l'application.
 
 ## ⚙️ Configuration
 
@@ -94,3 +113,22 @@ npm run dev
 ## 📄 License
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## ❗ Dépannage
+
+Si vous rencontrez des problèmes avec les fichiers de données :
+
+1. Vérifiez que Git LFS est bien installé :
+```bash
+git lfs version
+```
+
+2. Si les fichiers ne se téléchargent pas, forcez le téléchargement :
+```bash
+git lfs pull
+```
+
+3. Pour vérifier le statut des fichiers LFS :
+```bash
+git lfs status
+```
