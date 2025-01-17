@@ -137,3 +137,66 @@ git lfs pull
 ```bash
 git lfs status
 ```
+
+## 🤝 Comment Contribuer
+
+Nous sommes ravis d'accueillir des contributions ! Voici comment participer :
+
+### Prérequis
+1. Installez Git LFS (voir section Installation)
+2. Configurez votre environnement de développement Python et Node.js
+
+### Processus de contribution
+1. Forkez le projet
+2. Créez votre branche de fonctionnalité
+```bash
+git checkout -b feature/AmazingFeature
+```
+
+3. Configurez l'environnement de développement
+```bash
+# Installation des dépendances de développement Python
+pip install -r requirements-dev.txt
+
+# Installation des dépendances de développement Node.js
+npm install
+```
+
+4. Committez vos changements
+```bash
+git commit -m 'Add: Amazing Feature'
+```
+
+5. Poussez vers votre branche
+```bash
+git push origin feature/AmazingFeature
+```
+
+6. Ouvrez une Pull Request
+
+### Standards de code
+- Utilisez le formatage Black pour Python
+- Suivez les conventions ESLint pour TypeScript/React
+- Écrivez des tests unitaires pour les nouvelles fonctionnalités
+- Documentez votre code et mettez à jour la documentation si nécessaire
+
+### Tests
+```bash
+# Tests Python
+pytest
+
+# Tests React
+npm run test
+```
+
+### Signalement de bugs
+Si vous trouvez un bug :
+1. Vérifiez qu'il n'a pas déjà été signalé dans les Issues
+2. Ouvrez une nouvelle Issue en utilisant le template Bug Report
+3. Incluez un exemple minimal reproductible
+
+### Suggestions de fonctionnalités
+Pour proposer une nouvelle fonctionnalité :
+1. Ouvrez une Issue en utilisant le template Feature Request
+2. Décrivez clairement le besoin et l'utilisation prévue
+3. Attendez la validation de l'équipe avant de commencer le développement
