@@ -23,6 +23,20 @@ var/
 .installed.cfg
 *.egg
 
+# Cache Python supplémentaires
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
 # Environnements virtuels
 venv/
 ENV/
