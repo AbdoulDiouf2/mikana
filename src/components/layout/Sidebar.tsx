@@ -14,7 +14,7 @@ import Logo from '../common/Logo';
 const navItems = [
   { icon: LayoutDashboard, label: 'Tableau de Bord', path: '/' },
   { icon: Brain, label: 'Prévision Commandes', path: '/prediction' },
-  { icon: Wrench, label: 'Maintenance', path: '/maintenance' },
+  { icon: Wrench, label: 'Maintenance', path: '/maintenance', disabled: true },
   { icon: Truck, label: 'Livraison', path: '/delivery' },
   { icon: Users, label: 'Gestion RH', path: '/hr' },
 ];
@@ -33,11 +33,10 @@ export default function Sidebar() {
               to={item.path}
               className={({ isActive }) =>
                 `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800'
+                  item.disabled ? 'text-slate-500 cursor-not-allowed' : (isActive ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-800')
                 }`
               }
+              onClick={item.disabled ? (e) => e.preventDefault() : undefined}
             >
               <item.icon className="w-5 h-5" />
               <span>{item.label}</span>
