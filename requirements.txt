@@ -1,16 +1,16 @@
 # Dépendances principales
-prophet==1.1.4
-pandas>=2.0.0
-numpy>=1.23.0
+prophet
+pandas
+numpy
 
 # Dépendances pour l'analyse et la visualisation
-matplotlib>=3.7.0
-plotly>=5.13.0
+matplotlib
+plotly
 
 # Dépendances pour l'API (si nécessaire)
-fastapi>=0.95.0
-uvicorn>=0.21.0
+fastapi
+uvicorn
 
 # Dépendances utilitaires
-python-dotenv>=0.21.0
-pystan>=3.7.0 
+python-dotenv
+pystan
