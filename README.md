@@ -138,6 +138,85 @@ git lfs pull
 git lfs status
 ```
 
+## 🚀 Guide de démarrage
+
+Suivez les étapes ci-dessous pour configurer votre environnement et tester l'application sur un nouvel ordinateur.
+
+### 1. Installer Git
+
+Téléchargez et installez Git depuis [le site officiel](https://git-scm.com/downloads). Suivez les instructions spécifiques à votre système d'exploitation.
+
+### 2. Installer Git LFS
+
+Git LFS est nécessaire pour gérer les fichiers volumineux. Après avoir installé Git, exécutez les commandes suivantes dans votre terminal :
+
+```bash
+git lfs install
+```
+
+### 3. Installer Python
+
+Téléchargez et installez Python 3.9+ depuis [le site officiel](https://www.python.org/downloads/). Assurez-vous d'ajouter Python à votre PATH lors de l'installation.
+
+### 4. Installer Node.js et npm
+
+Téléchargez et installez Node.js (qui inclut npm) depuis [le site officiel](https://nodejs.org/). Suivez les instructions spécifiques à votre système d'exploitation.
+
+### 5. Cloner le dépôt
+
+Clonez le projet en utilisant Git :
+
+```bash
+git clone https://github.com/AbdoulDiouf2/mikana.git
+cd mikana
+```
+
+### 6. Installer les dépendances Python
+
+Créez un environnement virtuel et installez les dépendances :
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Sur Windows : venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 7. Installer les dépendances frontend
+
+Installez les dépendances Node.js :
+
+```bash
+npm install
+```
+
+### 8. Configurer les variables d'environnement
+
+Créez un fichier `.env` à la racine du projet et ajoutez-y les configurations nécessaires. Vous pouvez vous référer à `.env.example` pour les variables requises.
+
+### 9. Démarrer les services
+
+Ouvrez deux terminaux :
+
+- **Terminal 1** : Démarrez le backend FastAPI
+  ```bash
+  uvicorn src.api.prediction_service:app --reload --port 8000
+  ```
+
+- **Terminal 2** : Démarrez le frontend React
+  ```bash
+  npm run dev
+  ```
+
+### 10. Accéder à l'application
+
+Ouvrez votre navigateur et allez à [http://localhost:5173](http://localhost:5173) pour accéder à l'interface utilisateur de l'application.
+
+### ⚠️ Remarques
+
+- Assurez-vous que tous les prérequis sont installés correctement.
+- Si vous rencontrez des problèmes lors de l'installation des dépendances, vérifiez les versions de Python et Node.js.
+- Consultez la section [Dépannage](#-dépannage) en cas de problèmes avec Git LFS ou d'autres erreurs.
+
 ## 🤝 Comment Contribuer
 
 Nous sommes ravis d'accueillir des contributions ! Voici comment participer :
@@ -148,6 +227,8 @@ Nous sommes ravis d'accueillir des contributions ! Voici comment participer :
 
 ### Processus de contribution
 1. Forkez le projet
+   1. Rendez-vous sur la page GitHub du projet.
+   2. Cliquez sur le bouton "Fork" situé en haut à droite de la page.
 2. Créez votre branche de fonctionnalité
 ```bash
 git checkout -b feature/AmazingFeature
