@@ -63,6 +63,7 @@ Cette application permet de prédire les futures commandes de linge en utilisant
 2. Installer Git LFS pour les fichiers volumineux :
    ```bash
    git lfs install
+   git lsf pull
    ```
 3. Installer Python 3.9+ depuis [python.org](https://www.python.org/downloads/).
 4. Installer Node.js et npm depuis [nodejs.org](https://nodejs.org/).
