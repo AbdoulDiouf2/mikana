@@ -1,3 +1,6 @@
+# Dépendances supplémentaires
+Cython
+
 # Dépendances principales
 prophet
 pandas

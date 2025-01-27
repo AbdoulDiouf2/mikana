@@ -58,6 +58,38 @@ Cette application permet de prédire les futures commandes de linge en utilisant
 
 ## 🚦 Guide de Démarrage
 
+### Utilisation des Scripts d'Exécution
+
+Pour simplifier le processus d'installation et de lancement de l'application, vous pouvez utiliser les scripts suivants :
+
+- **Pour Unix (Linux/macOS) :**
+  ```bash
+  ./start_app.sh
+  ```
+
+- **Pour Windows :**
+  ```batch
+  start_app.bat
+  ```
+
+Ces scripts automatisent les étapes suivantes :
+1. Création et activation de l'environnement virtuel Python.
+2. Installation des dépendances backend et frontend.
+3. Démarrage des serveurs backend et frontend.
+4. Ouverture automatique de l'application dans votre navigateur par défaut.
+
+### 📛 Gestion des Erreurs
+
+Les scripts incluent désormais une gestion des erreurs permettant d'afficher un message informatif en cas de problème à n'importe quelle étape sans arrêter le processus.
+
+- **Pour Unix (Linux/macOS) :**
+  - Si une commande échoue, un message d'erreur sera affiché, mais le script continuera son exécution.
+
+- **Pour Windows :**
+  - Chaque étape est suivie d'une vérification. En cas d'erreur, un message d'erreur sera affiché, mais le script continuera son exécution.
+
+Cela vous permet de détecter rapidement et de résoudre les problèmes potentiels lors de l'installation ou du lancement de l'application sans interrompre totalement le processus.
+
 ### Prérequis
 1. Installer [Git](https://git-scm.com/downloads).
 2. Installer Git LFS pour les fichiers volumineux :
@@ -86,7 +118,7 @@ Cette application permet de prédire les futures commandes de linge en utilisant
      pip install -r requirements.txt
      ```
 
-3. Configurez Git LFS si ce n’est pas déjà fait :
+3. Configurez Git LFS si ce n'est pas déjà fait :
    ```bash
    git lfs install
    ```
@@ -148,7 +180,7 @@ Cette application permet de prédire les futures commandes de linge en utilisant
   git lfs pull     # Forcer le téléchargement
   ```
 
-- **Python non reconnu sur Windows** : Consultez la section [Problèmes communs](#d%C3%A9pannage).
+- **Python non reconnu sur Windows** : Consultez la section [Problèmes communs](#dépannage).
 
 - **Tests** :
   - Python :
