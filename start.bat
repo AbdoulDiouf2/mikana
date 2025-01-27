@@ -2,6 +2,12 @@
 
 REM Lancement des serveurs backend et frontend
 
+echo Activation de l'environnement virtuel...
+call venv\Scripts\activate
+IF ERRORLEVEL 1 (
+    echo --> Echec de l'activation de l'environnement virtuel
+)
+
 echo Etape 1 : Lancement du backend...
 start /B uvicorn src.api.prediction_service:app --reload --port 8000
 IF ERRORLEVEL 1 (
@@ -14,7 +20,7 @@ IF ERRORLEVEL 1 (
     echo --> Echec du lancement du frontend
 )
 
-echo Etape 3 : Attente du démarrage des serveurs...
+echo Etape 3 : Attente du demarrage des serveurs...
 timeout /t 5
 IF ERRORLEVEL 1 (
     echo --> Echec de l'attente
@@ -26,4 +32,4 @@ IF ERRORLEVEL 1 (
     echo --> Echec de l'ouverture du navigateur
 ) 
 
-echo ✅ Application lancee avec succès. 
+echo ✅ Application lancee avec succes. 

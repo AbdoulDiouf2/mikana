@@ -62,21 +62,22 @@ Cette application permet de prédire les futures commandes de linge en utilisant
 
 Pour simplifier le processus d'installation et de lancement de l'application, vous pouvez utiliser les scripts suivants :
 
-- **Pour Unix (Linux/macOS) :**
+- **Configuration et Installation des Dépendances :**
   ```bash
-  ./start_app.sh
+  ./setup.sh
   ```
 
-- **Pour Windows :**
-  ```batch
-  start_app.bat
+- **Lancement de l'Application :**
+  ```bash
+  ./start.sh
   ```
 
 Ces scripts automatisent les étapes suivantes :
 1. Création et activation de l'environnement virtuel Python.
-2. Installation des dépendances backend et frontend.
-3. Démarrage des serveurs backend et frontend.
-4. Ouverture automatique de l'application dans votre navigateur par défaut.
+2. Installation des dépendances backend et frontend, **une par une**.
+3. Activation de l'environnement virtuel lors du lancement de l'application.
+4. Démarrage des serveurs backend et frontend.
+5. Ouverture automatique de l'application dans votre navigateur par défaut.
 
 ### 📛 Gestion des Erreurs
 
@@ -85,10 +86,7 @@ Les scripts incluent désormais une gestion des erreurs permettant d'afficher un
 - **Pour Unix (Linux/macOS) :**
   - Si une commande échoue, un message d'erreur sera affiché, mais le script continuera son exécution.
 
-- **Pour Windows :**
-  - Chaque étape est suivie d'une vérification. En cas d'erreur, un message d'erreur sera affiché, mais le script continuera son exécution.
-
-Cela vous permet de détecter rapidement et de résoudre les problèmes potentiels lors de l'installation ou du lancement de l'application sans interrompre totalement le processus.
+De plus, une indication de succès (`✅`) sera affichée une fois que l'installation des dépendances et le lancement de l'application sont terminés.
 
 ### Prérequis
 1. Installer [Git](https://git-scm.com/downloads).

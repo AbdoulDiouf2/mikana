@@ -2,6 +2,12 @@
 
 # Lancement des serveurs backend et frontend
 
+echo "🔧 Activation de l'environnement virtuel..."
+source venv/bin/activate
+if [ $? -ne 0 ]; then
+    echo "❌ Échec de l'activation de l'environnement virtuel"
+fi
+
 echo "🚀 Étape 1 : Lancement du backend..."
 uvicorn src.api.prediction_service:app --reload --port 8000 &
 if [ $? -ne 0 ]; then
