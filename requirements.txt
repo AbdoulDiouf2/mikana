@@ -3,7 +3,7 @@ Cython
 
 # Dépendances principales
 prophet
-pandas
+pandas==1.5.3
 numpy
 
 # Dépendances pour l'analyse et la visualisation
@@ -13,6 +13,11 @@ plotly
 # Dépendances pour l'API (si nécessaire)
 fastapi
 uvicorn
+
+# Dépendances pour l'historique et l'export
+sqlalchemy==1.4.41
+openpyxl==3.1.2
+reportlab==3.6.12
 
 # Dépendances utilitaires
 python-dotenv

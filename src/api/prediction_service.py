@@ -1,10 +1,17 @@
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional
 import pandas as pd
 from model_prophet import PredicteurTemporel
+import joblib
+import os
+from Planif_Livraisons.predict import predict_delivery
+from io import BytesIO
+from fastapi.responses import StreamingResponse, FileResponse
+from sqlalchemy.orm import Session
+from .database import get_db, PredictionHistory
 
 app = FastAPI()
 
@@ -27,6 +34,11 @@ class PredictionRequest(BaseModel):
     establishment: Optional[str] = None
     linenType: Optional[str] = None
     factors: List[str]
+
+class DeliveryPredictionRequest(BaseModel):
+    date: str
+    article: str
+    quantity: float
 
 @app.get("/api/establishments")
 async def get_establishments():
@@ -86,6 +98,41 @@ async def predict(request: PredictionRequest):
     except Exception as e:
         print(f"❌ Erreur: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 
+
+@app.post("/api/predict-delivery")
+async def predict_delivery_endpoint(
+    request: DeliveryPredictionRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        # Convertir la date ISO en datetime
+        delivery_date = datetime.fromisoformat(request.date.replace('Z', '+00:00'))
+        
+        # Appeler la fonction de prédiction
+        result = predict_delivery(
+            date=delivery_date,
+            article=request.article,
+            quantity=request.quantity
+        )
+        
+        # Créer l'entrée dans l'historique
+        history_entry = PredictionHistory(
+            date=delivery_date.date(),  # Stocker seulement la date
+            article=request.article,
+            quantity_ordered=request.quantity,
+            quantity_predicted=result["predicted_quantity"],
+            delivery_rate=result["delivery_rate"],
+            status=result["status"],
+            recommendation=result["recommendation"],
+            created_at=datetime.now()
+        )
+        
+        db.add(history_entry)
+        db.commit()
+        
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la prédiction: {str(e)}")
 
 @app.get("/api/historical-data")
 async def get_historical_data(establishment: str = None, linenType: str = None, month: int = None, day: int = None):
@@ -237,3 +284,107 @@ async def get_weather_impact(establishment: str = None, linenType: str = None):
     except Exception as e:
         print(f"❌ Erreur lors de l'analyse de l'impact météorologique: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 
+
+@app.get("/api/articles")
+async def get_articles():
+    try:
+        # Charger les colonnes du modèle
+        columns_path = os.path.join(os.path.dirname(__file__), '..', '..', 'Planif_Livraisons', 'model_columns.joblib')
+        print(f"Chargement des colonnes depuis: {columns_path}")
+        
+        if not os.path.exists(columns_path):
+            raise FileNotFoundError(f"Le fichier des colonnes n'existe pas: {columns_path}")
+            
+        model_columns = joblib.load(columns_path)
+        
+        # Extraire les noms d'articles (enlever le préfixe 'article_')
+        articles = [col[8:] for col in model_columns if col.startswith('article_')]
+        articles.sort()  # Trier par ordre alphabétique
+        
+        print(f"Articles trouvés: {articles}")
+        return {"articles": articles}
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de la récupération des articles: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/history")
+async def get_prediction_history(
+    db: Session = Depends(get_db),
+    limit: int = 50,
+    offset: int = 0
+):
+    try:
+        history = db.query(PredictionHistory)\
+            .order_by(PredictionHistory.created_at.desc())\
+            .offset(offset)\
+            .limit(limit)\
+            .all()
+            
+        return history
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération de l'historique: {str(e)}")
+
+@app.get("/api/export/{format}")
+async def export_predictions(
+    format: str,
+    db: Session = Depends(get_db),
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None
+):
+    try:
+        query = db.query(PredictionHistory)
+        
+        if start_date:
+            query = query.filter(PredictionHistory.created_at >= start_date)
+        if end_date:
+            query = query.filter(PredictionHistory.created_at <= end_date)
+            
+        predictions = query.order_by(PredictionHistory.created_at.desc()).all()
+        
+        # Convertir en DataFrame
+        df = pd.DataFrame([{
+            "Date de livraison": p.date,
+            "Article": p.article,
+            "Quantité commandée": p.quantity_ordered,
+            "Quantité prévue": p.quantity_predicted,
+            "Taux de livraison (%)": p.delivery_rate,
+            "Statut": p.status,
+            "Recommandation": p.recommendation,
+            "Date de prédiction": p.created_at
+        } for p in predictions])
+        
+        if format.lower() == "excel":
+            # Export Excel
+            output = BytesIO()
+            df.to_excel(output, index=False, sheet_name="Prédictions")
+            output.seek(0)
+            
+            return StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": f"attachment; filename=predictions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"}
+            )
+        elif format.lower() == "pdf":
+            # Export PDF
+            output = BytesIO()
+            
+            # Styliser le DataFrame pour le PDF
+            styled_df = df.style\
+                .set_properties(**{'font-size': '10pt'})\
+                .hide(axis='index')
+            
+            # Convertir en PDF
+            styled_df.to_latex(output)
+            output.seek(0)
+            
+            return StreamingResponse(
+                output,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=predictions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"}
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Format non supporté. Utilisez 'excel' ou 'pdf'")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de l'export: {str(e)}")
