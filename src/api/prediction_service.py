@@ -12,6 +12,7 @@ from io import BytesIO
 from fastapi.responses import StreamingResponse, FileResponse
 from sqlalchemy.orm import Session
 from .database import get_db, PredictionHistory
+import pandas as pd
 
 app = FastAPI()
 
@@ -325,6 +326,12 @@ async def get_prediction_history(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération de l'historique: {str(e)}")
 
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
+
 @app.get("/api/export/{format}")
 async def export_predictions(
     format: str,
@@ -355,7 +362,7 @@ async def export_predictions(
         } for p in predictions])
         
         if format.lower() == "excel":
-            # Export Excel
+            # Export Excel (inchangé)
             output = BytesIO()
             df.to_excel(output, index=False, sheet_name="Prédictions")
             output.seek(0)
@@ -366,25 +373,142 @@ async def export_predictions(
                 headers={"Content-Disposition": f"attachment; filename=predictions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"}
             )
         elif format.lower() == "pdf":
-            # Export PDF
+            # Création du PDF
             output = BytesIO()
+            doc = SimpleDocTemplate(
+                output,
+                pagesize=landscape(letter),
+                rightMargin=30,
+                leftMargin=30,
+                topMargin=30,
+                bottomMargin=30
+            )
             
-            # Styliser le DataFrame pour le PDF
-            styled_df = df.style\
-                .set_properties(**{'font-size': '10pt'})\
-                .hide(axis='index')
+            elements = []
             
-            # Convertir en PDF
-            styled_df.to_latex(output)
+            # Style pour le titre
+            styles = getSampleStyleSheet()
+            title = Paragraph("Historique des Prédictions", styles['Title'])
+            elements.append(title)
+            
+            # Préparation des données pour le tableau
+            data = [list(df.columns)]  # En-têtes
+            for _, row in df.iterrows():
+                formatted_row = []
+                for item in row:
+                    if isinstance(item, (datetime, pd.Timestamp)):
+                        formatted_row.append(item.strftime('%d/%m/%Y'))
+                    elif isinstance(item, float):
+                        formatted_row.append(f"{item:.2f}")
+                    else:
+                        formatted_row.append(str(item))
+                data.append(formatted_row)
+            
+            # Création du tableau
+            table = Table(data, repeatRows=1)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
+            ]))
+            
+            elements.append(table)
+            
+            # Construction du document
+            doc.build(elements)
+            
             output.seek(0)
-            
             return StreamingResponse(
                 output,
                 media_type="application/pdf",
-                headers={"Content-Disposition": f"attachment; filename=predictions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"}
+                headers={
+                    "Content-Disposition": f"attachment; filename=predictions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                }
             )
         else:
             raise HTTPException(status_code=400, detail="Format non supporté. Utilisez 'excel' ou 'pdf'")
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'export: {str(e)}")
+
+# Ajouter ces routes dans prediction_service.py
+
+@app.get("/api/delivery-stats")
+async def get_delivery_stats():
+    try:
+        # Charger le fichier Excel
+        df = pd.read_excel('Planif_Livraisons/Planif livraisons.xlsx')
+        df['Date expédition'] = pd.to_datetime(df['Date expédition'])
+        df['Année'] = df['Date expédition'].dt.year
+        df['Mois'] = df['Date expédition'].dt.month
+
+        # Données pour la tendance annuelle
+        yearly_trend = df.groupby('Année')['Qté livrée'].sum().reset_index()
+        yearly_trend = yearly_trend.rename(columns={
+            'Année': 'year',
+            'Qté livrée': 'delivered'
+        }).to_dict('records')
+
+        # Données pour la comparaison mensuelle
+        monthly_comparison = df[df['Année'].isin([2022, 2023, 2024])]
+        monthly_data = []
+        month_names = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 
+                      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
+        
+        for month in range(1, 13):
+            month_data = {'month': month_names[month-1]}
+            for year in [2022, 2023, 2024]:
+                quantity = monthly_comparison[
+                    (monthly_comparison['Année'] == year) & 
+                    (monthly_comparison['Mois'] == month)
+                ]['Qté livrée'].sum()
+                month_data[f'year{year}'] = float(quantity)
+            monthly_data.append(month_data)
+
+        # Données pour la distribution des articles
+        article_distribution = df.groupby('Désignation article')['Qté livrée'].sum()
+        threshold = article_distribution.sum() * 0.05  # seuil de 5%
+        major_articles = article_distribution[article_distribution >= threshold]
+        others = pd.Series({
+            'Autres': article_distribution[article_distribution < threshold].sum()
+        })
+        article_distribution = pd.concat([major_articles, others])
+        article_data = [
+            {'name': name, 'value': float(value)} 
+            for name, value in article_distribution.items()
+        ]
+
+        # Données pour la comparaison commandes/livraisons
+        comparison_data = df.groupby('Année').agg({
+            'Qté cdée': 'sum',
+            'Qté livrée': 'sum'
+        }).reset_index()
+        comparison_data = comparison_data.rename(columns={
+            'Année': 'year',
+            'Qté cdée': 'ordered',
+            'Qté livrée': 'delivered'
+        }).to_dict('records')
+
+        return {
+            "yearlyTrend": yearly_trend,
+            "monthlyComparison": monthly_data,
+            "articleDistribution": article_data,
+            "orderDeliveryComparison": comparison_data
+        }
+
+    except Exception as e:
+        print(f"❌ Erreur lors de la récupération des statistiques: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
+        )

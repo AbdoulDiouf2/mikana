@@ -8,7 +8,8 @@ numpy
 
 # Dépendances pour l'analyse et la visualisation
 matplotlib
-plotly
+# plotly
+plotly==5.18.0
 
 # Dépendances pour l'API (si nécessaire)
 fastapi

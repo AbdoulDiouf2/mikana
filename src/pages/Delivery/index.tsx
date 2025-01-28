@@ -8,6 +8,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { fr } from 'date-fns/locale';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import PredictionHistory from '../../components/PredictionHistory';
+import DeliveryCharts from '../../components/DeliveryCharts';
 
 interface PredictionResult {
   predicted_quantity: number;
@@ -353,6 +354,13 @@ const DeliveryPrediction: React.FC = () => {
             historyRef.current?.handleRefresh();
           }}
         />
+      </Box>
+      {/* Graphiques de livraison */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" gutterBottom>
+          Analyses des livraisons
+        </Typography>
+        <DeliveryCharts />
       </Box>
     </Box>
   );
