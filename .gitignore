@@ -24,6 +24,3 @@ dist-ssr
 *.sln
 *.sw?
 *.mp4
-*.joblib
-*.csv
-*.xlsx
