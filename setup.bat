@@ -70,6 +70,26 @@ pip install --quiet pystan
 IF ERRORLEVEL 1 (
     echo --> echec de l'installation de pystan
 )
+echo Installation de scikit-learn...
+pip install --quiet scikit-learn
+IF ERRORLEVEL 1 (
+    echo --> echec de l'installation de scikit-learn
+)
+echo Installation de sqlalchemy...
+pip install --quiet sqlalchemy
+IF ERRORLEVEL 1 (
+    echo --> echec de l'installation de sqlalchemy
+)
+echo Installation de openpyxl...
+pip install --quiet openpyxl
+IF ERRORLEVEL 1 (
+    echo --> echec de l'installation de openpyxl
+)
+echo Installation de reportlab...
+pip install --quiet reportlab
+IF ERRORLEVEL 1 (
+    echo --> echec de l'installation de reportlab
+)
 
 echo Installation des dependances backend terminee.
 
