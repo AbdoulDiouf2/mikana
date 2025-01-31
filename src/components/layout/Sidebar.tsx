@@ -17,6 +17,7 @@ const navItems = [
   { icon: Wrench, label: 'Maintenance', path: '/maintenance', disabled: true },
   { icon: Truck, label: 'Livraison', path: '/delivery' },
   { icon: Users, label: 'Gestion RH', path: '/hr' },
+  { icon: Settings, label: 'Centre de Performance', path: '/performance' },
 ];
 
 export default function Sidebar() {

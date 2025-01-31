@@ -5,19 +5,23 @@ Cython
 prophet
 pandas==1.5.3
 numpy
+joblib
 
 # Dépendances pour l'analyse et la visualisation
 matplotlib
-# plotly
 plotly==5.18.0
 
 # Dépendances pour l'API (si nécessaire)
 fastapi
+pydantic
 uvicorn
+starlette
+aiofiles
+xgboost
 
 # Dépendances pour l'historique et l'export
 sqlalchemy==1.4.41
-openpyxl==3.1.2
+openpyxl
 reportlab==3.6.12
 scikit-learn
 

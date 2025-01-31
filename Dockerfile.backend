@@ -1,0 +1,23 @@
+# Utilise une image de base Python
+FROM python:3.9-slim
+
+# Définit le répertoire de travail
+WORKDIR /app
+
+# Copie les fichiers nécessaires
+COPY requirements.txt .
+COPY . .
+
+# Installe les dépendances
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose les ports pour les services
+EXPOSE 8000  
+EXPOSE 8001 
+
+# Copie le script de démarrage
+COPY start_services.sh /app/start_services.sh
+RUN chmod +x /app/start_services.sh
+
+# Commande pour lancer les deux services
+CMD ["./start_services.sh"]

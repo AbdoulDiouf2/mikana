@@ -7,6 +7,7 @@ import OrderPrediction from './pages/OrderPrediction';
 import Maintenance from './pages/Maintenance';
 import Delivery from './pages/Delivery';
 import HRPlanning from './pages/HRPlanning';
+import PerformanceCenter from './pages/PerformanceCenter';
 
 function App() {
   const [isDark, setIsDark] = useState(false);
@@ -29,6 +30,7 @@ function App() {
               <Route path="/maintenance" element={<Maintenance />} />
               <Route path="/delivery" element={<Delivery />} />
               <Route path="/hr" element={<HRPlanning />} />
+              <Route path="/performance" element={<PerformanceCenter/>} />
             </Routes>
           </main>
         </div>
