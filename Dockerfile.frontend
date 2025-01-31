@@ -1,17 +1,25 @@
-# Utilise une image de base Node.js
-FROM node:16
+# Utilise une version LTS de Node pour plus de stabilité
+FROM node:18-slim
 
 # Définit le répertoire de travail
 WORKDIR /app
 
-# Copie les fichiers nécessaires
-COPY package.json package-lock.json ./
+# Copie uniquement les fichiers de configuration
+COPY package.json ./
+COPY package-lock.json* ./
+COPY tsconfig*.json* ./
+COPY vite.config.js* ./
 
-# Copie le reste des fichiers
-COPY . .
+# Installation des dépendances avec cache optimisé
+RUN npm install
 
-# Expose le port (Vite utilise 5173 par défaut)
+# Copie du code source uniquement
+COPY src/ ./src/
+COPY index.html ./
+
+# Configuration pour Vite
+ENV HOST=0.0.0.0
 EXPOSE 5173
 
-# Commande pour lancer le frontend
-CMD ["npm", "run", "dev"]
+# Commande de démarrage
+CMD ["npm", "run", "dev", "--", "--host"]

@@ -16,8 +16,8 @@ EXPOSE 8000
 EXPOSE 8001 
 
 # Copie le script de démarrage
-COPY start_services.sh /app/start_services.sh
-RUN chmod +x /app/start_services.sh
+COPY start_service.sh /app/start_service.sh
+RUN chmod +x /app/start_service.sh
 
 # Commande pour lancer les deux services
-CMD ["./start_services.sh"]
+CMD ["./start_service.sh"]

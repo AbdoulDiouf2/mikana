@@ -1,0 +1,15 @@
+node_modules
+package-lock.json
+node_modules/
+.git/
+.vscode/
+__pycache__/
+venv/
+dist/
+build/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.DS_Store

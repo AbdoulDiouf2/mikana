@@ -65,7 +65,6 @@ export default function PredictionForm({ onPredictionResult }: PredictionFormPro
 
   const additionalFactors = [
     { id: 'weather', label: 'Météo', icon: <CloudSun className="w-4 h-4" /> },
-    { id: 'season', label: 'Saison', icon: <Calendar className="w-4 h-4" /> },
     { id: 'events', label: 'Événements', icon: <Package className="w-4 h-4" /> },
   ];
 
