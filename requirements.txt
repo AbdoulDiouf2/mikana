@@ -29,3 +29,9 @@ scikit-learn
 python-dotenv
 pystan
 python-multipart
+
+# Dépendances pour la gestion de bases de données
+mysql-connector-python
+pymysql
+redis
+fastapi-cache2

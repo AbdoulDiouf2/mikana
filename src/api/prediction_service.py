@@ -2,31 +2,101 @@ from fastapi import FastAPI, HTTPException, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import pandas as pd
-from model_prophet import PredicteurTemporel
-import joblib
-import os
-from Planif_Livraisons.predict import predict_delivery
-from io import BytesIO
-from fastapi.responses import StreamingResponse, FileResponse
-from sqlalchemy.orm import Session
-from .database import get_db, PredictionHistory
-import pandas as pd
+import numpy as np
+from pathlib import Path
+import uuid
+from .hr_prediction import HRPredictor
 
 app = FastAPI()
 
-# Configuration CORS modifiée
+# Configuration CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
+)                                                                                                                                                                                                                                                                                               
+
+# Initialisation du prédicteur RH
+hr_predictor = HRPredictor()
+
+class RHPredictionRequest(BaseModel):
+    date: str
+    currentStaff: int
+    turnoverRate: float
+    workload: float
+    department: str
+
+class RHPredictionResponse(BaseModel):
+    id: str
+    date: str
+    weekly_predictions: List[Dict[str, Any]]
+    confidence_intervals: List[Dict[str, Any]]
+    status: str
+    warning: Optional[str] = None
+    department: str
+
+@app.get("/")
+async def root():
+    return {"message": "API de prédiction RH active"}
+
+@app.post("/api/predict-rh", response_model=RHPredictionResponse)
+async def predict_rh(request: RHPredictionRequest):
+    try:
+        print(f"Demande de prédiction reçue pour la date: {request.date}")
+        
+        # Convertir la date en datetime
+        target_date = datetime.strptime(request.date, "%Y-%m-%d")
+        current_date = datetime.now()
+        
+        if target_date <= current_date:
+            raise HTTPException(
+                status_code=400,
+                detail="La date de prédiction doit être dans le futur"
+            )
+        
+        # Obtenir les prédictions hebdomadaires
+        predictions = hr_predictor.predict_staff(
+            current_staff=request.currentStaff,
+            turnover_rate=request.turnoverRate,
+            workload=request.workload,
+            target_date=target_date,
+            department=request.department
+        )
+        
+        response = RHPredictionResponse(
+            id=str(uuid.uuid4())[:8],
+            date=request.date,
+            weekly_predictions=predictions['weekly_predictions'],
+            confidence_intervals=predictions['confidence_intervals'],
+            status="completed",
+            warning=predictions.get('warning'),
+            department=request.department
+        )
+        print("Réponse générée avec succès")
+        return response
+        
+    except Exception as e:
+        print(f"ERREUR lors de la prédiction: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la prédiction RH: {str(e)}"
+        )
+
+# Constants
+DEPARTMENTS = ["IT", "Sales", "HR", "Finance", "Marketing", "Operations"]
+MAX_WEEKS_AHEAD = 52  # Maximum number of weeks to predict
+MIN_STAFF = 5  # Minimum staff per department
+MAX_STAFF = 100  # Maximum staff per department
 
 # Initialisation du prédicteur
 predicteur = PredicteurTemporel()
+
+# Initialisation du prédicteur RH
+hr_predictor = HRPredictor()
 
 class PredictionRequest(BaseModel):
     dateType: str
@@ -40,6 +110,64 @@ class DeliveryPredictionRequest(BaseModel):
     date: str
     article: str
     quantity: float
+
+class RHPredictionRequest(BaseModel):
+    date: str
+    department: str
+    currentStaff: int
+    turnoverRate: float
+    workload: float
+
+class RHPredictionResponse(BaseModel):
+    id: str
+    date: str
+    weekly_predictions: List[Dict[str, Any]]
+    confidence_intervals: List[Dict[str, Any]]
+    status: str
+    warning: Optional[str] = None
+    department: str
+
+class Alert(BaseModel):
+    id: str
+    type: str
+    message: str
+    severity: str
+    timestamp: datetime
+    department: Optional[str] = None
+    status: str = "active"
+    value: Optional[float] = None
+    threshold: Optional[float] = None
+    date: Optional[str] = None
+
+class DepartmentStats(BaseModel):
+    id: str
+    name: str
+    currentStaff: int
+    targetStaff: int
+    turnoverRate: float
+    avgPerformance: float
+
+class HRPrediction(BaseModel):
+    id: str
+    date: str
+    department: str
+    predicted_staff: int
+    predictedStaff: Optional[int] = None
+    actualStaff: Optional[int] = None
+    accuracy: Optional[float] = None
+    confidence_min: Optional[int] = None
+    confidence_max: Optional[int] = None
+    recommendations: Optional[List[str]] = []
+    status: str = "completed"
+    warning: Optional[str] = None
+    reliability_score: Optional[float] = 85.0  # Score de fiabilité par défaut
+
+class HRPredictionRequest(BaseModel):
+    date: str
+    department: str
+    currentStaff: int
+    turnoverRate: float
+    workload: float
 
 @app.get("/api/establishments")
 async def get_establishments():
@@ -312,25 +440,64 @@ async def get_articles():
 @app.get("/api/history")
 async def get_prediction_history(
     db: Session = Depends(get_db),
-    limit: int = 50,
+    limit: int = 10,  # Par défaut 10 éléments
     offset: int = 0
 ):
     try:
-        history = db.query(PredictionHistory)\
-            .order_by(PredictionHistory.created_at.desc())\
-            .offset(offset)\
-            .limit(limit)\
-            .all()
-            
-        return history
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération de l'historique: {str(e)}")
+        # Log pour debug
+        print(f"Tentative de récupération de l'historique: limit={limit}, offset={offset}")
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, landscape
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import Paragraph
+        # Requête avec gestion explicite des erreurs
+        query = db.query(PredictionHistory)\
+            .order_by(PredictionHistory.created_at.desc())
+        
+        # Compter le total avant pagination
+        total = query.count()
+        print(f"Nombre total d'enregistrements: {total}")
+
+        # Appliquer la pagination
+        records = query.offset(offset).limit(limit).all()
+        print(f"Nombre d'enregistrements récupérés: {len(records)}")
+
+        # Conversion en dictionnaire avec gestion des erreurs
+        result = []
+        for record in records:
+            try:
+                result.append({
+                    "date": record.date.strftime("%Y-%m-%d") if record.date else None,
+                    "article": str(record.article),
+                    "quantity_ordered": float(record.quantity_ordered),
+                    "quantity_predicted": float(record.quantity_predicted),
+                    "delivery_rate": float(record.delivery_rate),
+                    "status": str(record.status),
+                    "recommendation": str(record.recommendation),
+                    "created_at": record.created_at.strftime("%Y-%m-%d %H:%M:%S") if record.created_at else None
+                })
+            except Exception as e:
+                print(f"Erreur lors de la conversion d'un enregistrement: {e}")
+                continue
+
+        return {
+            "success": True,
+            "data": result,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+
+    except Exception as e:
+        print(f"Erreur dans get_prediction_history: {str(e)}")
+        # Renvoyer une réponse plus détaillée pour le debug
+        return {
+            "success": False,
+            "error": str(e),
+            "detail": "Erreur lors de la récupération de l'historique"
+        }
+
+@app.on_event("startup")
+async def startup():
+    redis = aioredis.from_url("redis://redis:6379", encoding="utf8")
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
 
 @app.get("/api/export/{format}")
 async def export_predictions(
@@ -441,8 +608,6 @@ async def export_predictions(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'export: {str(e)}")
 
-# Ajouter ces routes dans prediction_service.py
-
 @app.get("/api/delivery-stats")
 async def get_delivery_stats():
     try:
@@ -509,6 +674,202 @@ async def get_delivery_stats():
     except Exception as e:
         print(f"❌ Erreur lors de la récupération des statistiques: {str(e)}")
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
         )
+
+@app.get("/api/hr/alerts", response_model=List[Alert])
+async def get_alerts():
+    # Simulation de données d'alerte
+    alerts = [
+        Alert(
+            id="1",
+            type="warning",
+            department="IT",
+            message="Taux de rotation élevé ce mois-ci",
+            value=15,
+            threshold=10,
+            date=datetime.now().isoformat()
+        ),
+        Alert(
+            id="2",
+            type="danger",
+            department="Sales",
+            message="Sous-effectif critique",
+            value=5,
+            threshold=8,
+            date=datetime.now().isoformat()
+        ),
+        Alert(
+            id="3",
+            type="info",
+            department="HR",
+            message="Nouveau processus de recrutement mis en place",
+            date=datetime.now().isoformat()
+        )
+    ]
+    return alerts
+
+@app.get("/api/hr/department-stats", response_model=List[DepartmentStats])
+async def get_department_stats():
+    # Simulation de statistiques par département
+    stats = []
+    for i, dept in enumerate(DEPARTMENTS):
+        stats.append(
+            DepartmentStats(
+                id=str(i+1),
+                name=dept,
+                currentStaff=random.randint(10, 50),
+                targetStaff=random.randint(15, 55),
+                turnoverRate=round(random.uniform(0.05, 0.20), 2),
+                avgPerformance=round(random.uniform(0.70, 0.95), 2)
+            )
+        )
+    return stats
+
+@app.get("/api/hr/predictions")
+async def get_hr_predictions(page: int = 0, limit: int = 10):
+    # Simulation d'historique de prédictions
+    predictions = []
+    total = 20  # Nombre total de prédictions
+
+    start_date = datetime.now()
+    for i in range(total):
+        date = start_date - pd.Timedelta(days=i)
+        dept = random.choice(DEPARTMENTS)
+        predicted = random.randint(10, 50)
+        actual = predicted + random.randint(-5, 5) if random.random() > 0.2 else None
+        
+        predictions.append(
+            HRPrediction(
+                id=str(i+1),
+                date=date.isoformat(),
+                department=dept,
+                predicted_staff=predicted,
+                actual_staff=actual,
+                accuracy=round(random.uniform(0.85, 0.98), 2) if actual else None,
+                status="success" if actual else "pending"
+            )
+        )
+
+    # Pagination
+    start = page * limit
+    end = start + limit
+    return {
+        "data": predictions[start:end],
+        "total": total
+    }
+
+@app.post("/api/hr/predict", response_model=HRPrediction)
+async def predict_staffing(request: HRPredictionRequest):
+    # Simulation de prédiction
+    predicted_staff = int(
+        request.currentStaff * 
+        (1 - request.turnoverRate) * 
+        (1 + 0.1 * request.workload)
+    )
+    
+    # Calculer un score de fiabilité basé sur les facteurs
+    reliability_score = 100 - (
+        abs(request.turnoverRate * 100) * 0.3 +  # Impact du taux de rotation
+        abs(request.workload - 1) * 20  # Impact de la charge de travail
+    )
+    reliability_score = max(0, min(100, reliability_score))  # Limiter entre 0 et 100
+    
+    # Calculate confidence intervals (±10% of predicted staff)
+    confidence_min = int(predicted_staff * 0.9)
+    confidence_max = int(predicted_staff * 1.1)
+    
+    return HRPrediction(
+        id=str(uuid.uuid4()),  # Using UUID for better uniqueness
+        date=request.date,
+        department=request.department,
+        predicted_staff=predicted_staff,
+        predictedStaff=predicted_staff,  # Set both fields for compatibility
+        actualStaff=request.currentStaff,
+        accuracy=None,  # Will be calculated later when actual data is available
+        confidence_min=confidence_min,
+        confidence_max=confidence_max,
+        status="completed",
+        warning=None if reliability_score > 70 else "Prédiction de fiabilité moyenne",
+        reliability_score=reliability_score,
+        recommendations=[
+            "Surveiller le taux de rotation du personnel",
+            "Évaluer les besoins en formation",
+            "Planifier le recrutement à l'avance"
+        ]
+    )
+
+@app.post("/api/predict-rh", response_model=RHPredictionResponse)
+async def predict_rh(request: RHPredictionRequest):
+    try:
+        print(f"Demande de prédiction reçue pour la date: {request.date}")
+        
+        # Convertir la date en datetime
+        target_date = datetime.strptime(request.date, "%Y-%m-%d")
+        current_date = datetime.now()
+        
+        if target_date <= current_date:
+            raise HTTPException(
+                status_code=400,
+                detail="La date de prédiction doit être dans le futur"
+            )
+        
+        # Obtenir les prédictions hebdomadaires
+        predictions = hr_predictor.predict_staff(
+            current_staff=request.currentStaff,
+            turnover_rate=request.turnoverRate,
+            workload=request.workload,
+            target_date=target_date,
+            department=request.department
+        )
+        
+        response = RHPredictionResponse(
+            id=str(uuid.uuid4())[:8],
+            date=request.date,
+            weekly_predictions=predictions['weekly_predictions'],
+            confidence_intervals=predictions['confidence_intervals'],
+            status="completed",
+            warning=predictions.get('warning'),
+            department=request.department
+        )
+        print("Réponse générée avec succès")
+        return response
+        
+    except Exception as e:
+        print(f"ERREUR lors de la prédiction: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la prédiction RH: {str(e)}"
+        )
+
+@app.get("/api/hr/departments")
+async def get_departments():
+    try:
+        departments = ["Production", "Logistique", "Maintenance", "Qualité", "Ressources Humaines", "Informatique"]
+        return {"departments": departments}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la récupération des départements: {str(e)}"
+        )
+
+@app.get("/api/hr/stats/{department}")
+async def get_department_stats(department: str):
+    try:
+        # Simulation de statistiques pour le département
+        return {
+            "currentStaff": random.randint(10, 50),
+            "targetStaff": random.randint(15, 55),
+            "turnoverRate": round(random.uniform(0.05, 0.20), 2),
+            "avgPerformance": round(random.uniform(0.70, 0.95), 2)
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
+        )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

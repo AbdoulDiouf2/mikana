@@ -1,15 +1,17 @@
 {
-    "timestamp": "2025-01-27 23:04:20",
+    "timestamp": "2025-02-02 05:23:54",
     "metrics": {
-        "train_mse": 0.0,
-        "train_rmse": 0.0,
-        "train_mae": 0.0,
-        "train_r2": 0.0,
-        "test_mse": 0.0,
-        "test_rmse": 0,
-        "test_mae": 0,
-        "test_r2": 0.0,
-        "cv_rmse": 0,
-        "cv_rmse_std": 0
+        "train_mse": 667.2156128628279,
+        "train_rmse": 25.830517084697085,
+        "train_mae": 16.699878900856422,
+        "train_r2": -0.14778942880496415,
+        "test_mse": 496.5962969564806,
+        "test_rmse": 22.284440692027264,
+        "test_mae": 14.435112967152724,
+        "test_r2": -0.6953565201227223,
+        "train_ci_width_mean": 730.9585344685851,
+        "test_ci_width_mean": 89.75202226165908,
+        "train_ci_coverage": 0.937984496124031,
+        "test_ci_coverage": 0.9333333333333333
     }
 }

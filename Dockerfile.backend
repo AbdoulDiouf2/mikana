@@ -4,20 +4,18 @@ FROM python:3.9-slim
 # Définit le répertoire de travail
 WORKDIR /app
 
-# Copie les fichiers nécessaires
-COPY requirements.txt .
+# Copie tout le contenu du projet
 COPY . .
 
 # Installe les dépendances
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Donne les permissions d'exécution au script de démarrage
+RUN chmod +x start_service.sh
+
 # Expose les ports pour les services
-EXPOSE 8000  
-EXPOSE 8001 
+EXPOSE 8000
+EXPOSE 8001
 
-# Copie le script de démarrage
-COPY start_service.sh /app/start_service.sh
-RUN chmod +x /app/start_service.sh
-
-# Commande pour lancer les deux services
-CMD ["./start_service.sh"]
+# Commande par défaut pour démarrer le service
+CMD ["/bin/bash", "start_service.sh"]
