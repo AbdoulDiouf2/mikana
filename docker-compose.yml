@@ -53,6 +53,9 @@ services:
       DATABASE_URL: mysql://mikana_user:mikana_password@mysql:3306/mikana_db
       WORKERS: 2
       LOG_LEVEL: warning
+    depends_on:
+      - mysql
+    command: ["sh", "/app/entrypoint.sh"]
     networks:
       - mikana-network
 

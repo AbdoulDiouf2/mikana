@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bell, Sun, Moon, Search, User } from 'lucide-react';
+import { Sun, Moon, Search } from 'lucide-react';
+// import { Bell, User } from 'lucide-react';
 
 export default function Header({ toggleTheme, isDark }: { toggleTheme: () => void; isDark: boolean }) {
   return (
@@ -20,6 +21,7 @@ export default function Header({ toggleTheme, isDark }: { toggleTheme: () => voi
           <button onClick={toggleTheme} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
+          {/* 
           <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 relative">
             <Bell className="w-5 h-5" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -33,6 +35,7 @@ export default function Header({ toggleTheme, isDark }: { toggleTheme: () => voi
               <p className="text-slate-500 dark:text-slate-400">Administrateur</p>
             </div>
           </div>
+          */}
         </div>
       </div>
     </header>

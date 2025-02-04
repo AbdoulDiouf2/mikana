@@ -129,40 +129,82 @@ async def predict(request: PredictionRequest):
         print(f"❌ Erreur: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 
 
+# @app.post("/api/predict-delivery")
+# async def predict_delivery_endpoint(
+#     request: DeliveryPredictionRequest,
+#     db: Session = Depends(get_db)
+# ):
+#     try:
+#         # Convertir la date ISO en datetime
+#         delivery_date = datetime.fromisoformat(request.date.replace('Z', '+00:00'))
+#         
+#         # Appeler la fonction de prédiction
+#         result = predict_delivery(
+#             date=delivery_date,
+#             article=request.article,
+#             quantity=request.quantity
+#         )
+#         
+#         # Créer l'entrée dans l'historique
+#         history_entry = PredictionHistory(
+#             date=delivery_date.date(),  # Stocker seulement la date
+#             article=request.article,
+#             quantity_ordered=request.quantity,
+#             quantity_predicted=result["predicted_quantity"],
+#             delivery_rate=result["delivery_rate"],
+#             status=result["status"],
+#             recommendation=result["recommendation"],
+#             created_at=datetime.now()
+#         )
+#         
+#         db.add(history_entry)
+#         db.commit()
+#         
+#         return result
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Erreur lors de la prédiction: {str(e)}")
+
 @app.post("/api/predict-delivery")
 async def predict_delivery_endpoint(
-    request: DeliveryPredictionRequest,
-    db: Session = Depends(get_db)
+   request: DeliveryPredictionRequest,
+   db: Session = Depends(get_db)
 ):
-    try:
-        # Convertir la date ISO en datetime
-        delivery_date = datetime.fromisoformat(request.date.replace('Z', '+00:00'))
+   try:
+       # Convertir la date ISO en datetime
+       delivery_date = datetime.fromisoformat(request.date.replace('Z', '+00:00'))
+
+       # Appeler la fonction de prédiction
+       result = predict_delivery(
+           date=delivery_date,
+           article=request.article,
+           quantity=request.quantity
+       )
+
+       # Créer l'entrée dans l'historique avec une requête SQL directe
+       query = """
+           INSERT INTO prediction_history 
+           (date, article, quantity_ordered, quantity_predicted, delivery_rate, status, recommendation, created_at)
+           VALUES 
+           (:date, :article, :quantity_ordered, :quantity_predicted, :delivery_rate, :status, :recommendation, :created_at)
+       """
         
-        # Appeler la fonction de prédiction
-        result = predict_delivery(
-            date=delivery_date,
-            article=request.article,
-            quantity=request.quantity
-        )
+       db.execute(query, {
+           "date": delivery_date,
+           "article": request.article,
+           "quantity_ordered": request.quantity,
+           "quantity_predicted": result["predicted_quantity"],
+           "delivery_rate": result["delivery_rate"],
+           "status": result["status"],
+           "recommendation": result["recommendation"],
+           "created_at": datetime.now()
+       })
         
-        # Créer l'entrée dans l'historique
-        history_entry = PredictionHistory(
-            date=delivery_date.date(),  # Stocker seulement la date
-            article=request.article,
-            quantity_ordered=request.quantity,
-            quantity_predicted=result["predicted_quantity"],
-            delivery_rate=result["delivery_rate"],
-            status=result["status"],
-            recommendation=result["recommendation"],
-            created_at=datetime.now()
-        )
-        
-        db.add(history_entry)
-        db.commit()
-        
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la prédiction: {str(e)}")
+       db.commit()
+       
+       return result
+
+   except Exception as e:
+       raise HTTPException(status_code=500, detail=f"Erreur lors de la prédiction: {str(e)}")
 
 @app.get("/api/historical-data")
 async def get_historical_data(establishment: str = None, linenType: str = None, month: int = None, day: int = None):
@@ -316,86 +358,25 @@ async def get_weather_impact(establishment: str = None, linenType: str = None):
         raise HTTPException(status_code=500, detail=str(e)) 
 
 @app.get("/api/articles")
-async def get_articles():
+async def get_articles(db: Session = Depends(get_db)):
     try:
-        # Charger les colonnes du modèle
-        columns_path = os.path.join(os.path.dirname(__file__), '..', '..', 'Planif_Livraisons', 'model_columns.joblib')
-        print(f"Chargement des colonnes depuis: {columns_path}")
+        # Requête SQL pour récupérer les articles uniques
+        query = """
+            SELECT DISTINCT `Désignation article` as article
+            FROM livraisons 
+            ORDER BY `Désignation article`
+        """
         
-        if not os.path.exists(columns_path):
-            raise FileNotFoundError(f"Le fichier des colonnes n'existe pas: {columns_path}")
-            
-        model_columns = joblib.load(columns_path)
+        articles = db.execute(query).fetchall()
+        # Convertir les résultats en liste
+        articles_list = [row[0] for row in articles]
         
-        # Extraire les noms d'articles (enlever le préfixe 'article_')
-        articles = [col[8:] for col in model_columns if col.startswith('article_')]
-        articles.sort()  # Trier par ordre alphabétique
-        
-        print(f"Articles trouvés: {articles}")
-        return {"articles": articles}
+        # print(f"Articles trouvés dans la BD: {articles_list}")
+        return {"articles": articles_list}
         
     except Exception as e:
-        print(f"❌ Erreur lors de la récupération des articles: {str(e)}")
+        print(f"Erreur lors de la récupération des articles: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# Commented out the code
-# @app.get("/api/history")
-# async def get_prediction_history(
-#     db: Session = Depends(get_db),
-#     limit: int = 10,  # Par défaut 10 éléments
-#     offset: int = 0
-# ):
-#     try:
-#         # Log pour debug
-#         print(f"Tentative de récupération de l'historique: limit={limit}, offset={offset}")
-
-#         # Requête avec gestion explicite des erreurs
-#         query = db.query(PredictionHistory)\
-#             .order_by(PredictionHistory.created_at.desc())
-        
-#         # Compter le total avant pagination
-#         total = query.count()
-#         print(f"Nombre total d'enregistrements: {total}")
-
-#         # Appliquer la pagination
-#         records = query.offset(offset).limit(limit).all()
-#         print(f"Nombre d'enregistrements récupérés: {len(records)}")
-
-#         # Conversion en dictionnaire avec gestion des erreurs
-#         result = []
-#         for record in records:
-#             try:
-#                 result.append({
-#                     "date": record.date.strftime("%Y-%m-%d") if record.date else None,
-#                     "article": str(record.article),
-#                     "quantity_ordered": float(record.quantity_ordered),
-#                     "quantity_predicted": float(record.quantity_predicted),
-#                     "delivery_rate": float(record.delivery_rate),
-#                     "status": str(record.status),
-#                     "recommendation": str(record.recommendation),
-#                     "created_at": record.created_at.strftime("%Y-%m-%d %H:%M:%S") if record.created_at else None
-#                 })
-#             except Exception as e:
-#                 print(f"Erreur lors de la conversion d'un enregistrement: {e}")
-#                 continue
-
-#         return {
-#             "success": True,
-#             "data": result,
-#             "total": total,
-#             "limit": limit,
-#             "offset": offset
-#         }
-
-#     except Exception as e:
-#         print(f"Erreur dans get_prediction_history: {str(e)}")
-#         # Renvoyer une réponse plus détaillée pour le debug
-#         return {
-#             "success": False,
-#             "error": str(e),
-#             "detail": "Erreur lors de la récupération de l'historique"
-#         }
-
 
 @app.get("/api/history")
 async def get_prediction_history(
