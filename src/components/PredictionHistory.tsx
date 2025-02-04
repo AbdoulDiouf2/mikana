@@ -50,14 +50,12 @@ const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProp
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/history?limit=${rowsPerPage}&offset=${page * rowsPerPage}`);
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération de l\'historique');
-      }
+      const response = await fetch(`http://localhost:8000/api/history?limit=${String(rowsPerPage)}&offset=${String(page * rowsPerPage)}`);
       const data = await response.json();
-      setHistory(Array.isArray(data) ? data : []);
+      console.log("History data received:", data);
+      setHistory(data.data || []);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error("Error fetching history:", error);
     } finally {
       setLoading(false);
     }
@@ -170,7 +168,7 @@ const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProp
               {history.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>
-                    {format(new Date(row.date), 'dd/MM/yyyy', { locale: fr })}
+                    {format(new Date(row.date.split(' ')[0]), 'dd/MM/yyyy', { locale: fr })}
                   </TableCell>
                   <TableCell>{row.article}</TableCell>
                   <TableCell align="right">{row.quantity_ordered}</TableCell>

@@ -34,14 +34,15 @@ const DeliveryCharts = () => {
     const [loading, setLoading] = useState(true);
   
     // Fonction pour formater les grands nombres
-    const formatYAxis = (value: number) => {
+    const formatYAxis = (value: any, index: number): string => {
+      if (typeof value !== 'number') return String(value);
       if (value >= 1000000) {
         return `${(value / 1000000).toFixed(1)}M`;
       }
       if (value >= 1000) {
         return `${(value / 1000).toFixed(0)}k`;
       }
-      return value;
+      return String(value);
     };
   
     // Fonction pour formater les valeurs du tooltip

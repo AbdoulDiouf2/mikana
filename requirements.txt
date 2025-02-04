@@ -34,4 +34,6 @@ python-multipart
 mysql-connector-python
 pymysql
 redis
+aioredis
 fastapi-cache2
+statsmodels

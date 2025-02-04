@@ -4,10 +4,25 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 import pandas as pd
+from model_prophet import PredicteurTemporel
+from Planif_Livraisons.predict import predict_delivery
+from io import BytesIO
+from fastapi.responses import StreamingResponse, FileResponse
+from sqlalchemy.orm import Session
+from .database import get_db, PredictionHistory
+import joblib
+import os
 import numpy as np
 from pathlib import Path
 import uuid
-from .hr_prediction import HRPredictor
+import aioredis
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
 
 app = FastAPI()
 
@@ -20,83 +35,15 @@ app.add_middleware(
     allow_headers=["*"],
 )                                                                                                                                                                                                                                                                                               
 
-# Initialisation du prédicteur RH
-hr_predictor = HRPredictor()
-
-class RHPredictionRequest(BaseModel):
-    date: str
-    currentStaff: int
-    turnoverRate: float
-    workload: float
-    department: str
-
-class RHPredictionResponse(BaseModel):
-    id: str
-    date: str
-    weekly_predictions: List[Dict[str, Any]]
-    confidence_intervals: List[Dict[str, Any]]
-    status: str
-    warning: Optional[str] = None
-    department: str
-
-@app.get("/")
-async def root():
-    return {"message": "API de prédiction RH active"}
-
-@app.post("/api/predict-rh", response_model=RHPredictionResponse)
-async def predict_rh(request: RHPredictionRequest):
-    try:
-        print(f"Demande de prédiction reçue pour la date: {request.date}")
-        
-        # Convertir la date en datetime
-        target_date = datetime.strptime(request.date, "%Y-%m-%d")
-        current_date = datetime.now()
-        
-        if target_date <= current_date:
-            raise HTTPException(
-                status_code=400,
-                detail="La date de prédiction doit être dans le futur"
-            )
-        
-        # Obtenir les prédictions hebdomadaires
-        predictions = hr_predictor.predict_staff(
-            current_staff=request.currentStaff,
-            turnover_rate=request.turnoverRate,
-            workload=request.workload,
-            target_date=target_date,
-            department=request.department
-        )
-        
-        response = RHPredictionResponse(
-            id=str(uuid.uuid4())[:8],
-            date=request.date,
-            weekly_predictions=predictions['weekly_predictions'],
-            confidence_intervals=predictions['confidence_intervals'],
-            status="completed",
-            warning=predictions.get('warning'),
-            department=request.department
-        )
-        print("Réponse générée avec succès")
-        return response
-        
-    except Exception as e:
-        print(f"ERREUR lors de la prédiction: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erreur lors de la prédiction RH: {str(e)}"
-        )
-
-# Constants
-DEPARTMENTS = ["IT", "Sales", "HR", "Finance", "Marketing", "Operations"]
-MAX_WEEKS_AHEAD = 52  # Maximum number of weeks to predict
-MIN_STAFF = 5  # Minimum staff per department
-MAX_STAFF = 100  # Maximum staff per department
+# @app.get("/")
+# async def root():
+#     return {"message": "API de prédiction RH active"}
 
 # Initialisation du prédicteur
 predicteur = PredicteurTemporel()
 
 # Initialisation du prédicteur RH
-hr_predictor = HRPredictor()
+# hr_predictor = HRPredictor()
 
 class PredictionRequest(BaseModel):
     dateType: str
@@ -111,22 +58,6 @@ class DeliveryPredictionRequest(BaseModel):
     article: str
     quantity: float
 
-class RHPredictionRequest(BaseModel):
-    date: str
-    department: str
-    currentStaff: int
-    turnoverRate: float
-    workload: float
-
-class RHPredictionResponse(BaseModel):
-    id: str
-    date: str
-    weekly_predictions: List[Dict[str, Any]]
-    confidence_intervals: List[Dict[str, Any]]
-    status: str
-    warning: Optional[str] = None
-    department: str
-
 class Alert(BaseModel):
     id: str
     type: str
@@ -138,36 +69,6 @@ class Alert(BaseModel):
     value: Optional[float] = None
     threshold: Optional[float] = None
     date: Optional[str] = None
-
-class DepartmentStats(BaseModel):
-    id: str
-    name: str
-    currentStaff: int
-    targetStaff: int
-    turnoverRate: float
-    avgPerformance: float
-
-class HRPrediction(BaseModel):
-    id: str
-    date: str
-    department: str
-    predicted_staff: int
-    predictedStaff: Optional[int] = None
-    actualStaff: Optional[int] = None
-    accuracy: Optional[float] = None
-    confidence_min: Optional[int] = None
-    confidence_max: Optional[int] = None
-    recommendations: Optional[List[str]] = []
-    status: str = "completed"
-    warning: Optional[str] = None
-    reliability_score: Optional[float] = 85.0  # Score de fiabilité par défaut
-
-class HRPredictionRequest(BaseModel):
-    date: str
-    department: str
-    currentStaff: int
-    turnoverRate: float
-    workload: float
 
 @app.get("/api/establishments")
 async def get_establishments():
@@ -437,45 +338,95 @@ async def get_articles():
         print(f"❌ Erreur lors de la récupération des articles: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Commented out the code
+# @app.get("/api/history")
+# async def get_prediction_history(
+#     db: Session = Depends(get_db),
+#     limit: int = 10,  # Par défaut 10 éléments
+#     offset: int = 0
+# ):
+#     try:
+#         # Log pour debug
+#         print(f"Tentative de récupération de l'historique: limit={limit}, offset={offset}")
+
+#         # Requête avec gestion explicite des erreurs
+#         query = db.query(PredictionHistory)\
+#             .order_by(PredictionHistory.created_at.desc())
+        
+#         # Compter le total avant pagination
+#         total = query.count()
+#         print(f"Nombre total d'enregistrements: {total}")
+
+#         # Appliquer la pagination
+#         records = query.offset(offset).limit(limit).all()
+#         print(f"Nombre d'enregistrements récupérés: {len(records)}")
+
+#         # Conversion en dictionnaire avec gestion des erreurs
+#         result = []
+#         for record in records:
+#             try:
+#                 result.append({
+#                     "date": record.date.strftime("%Y-%m-%d") if record.date else None,
+#                     "article": str(record.article),
+#                     "quantity_ordered": float(record.quantity_ordered),
+#                     "quantity_predicted": float(record.quantity_predicted),
+#                     "delivery_rate": float(record.delivery_rate),
+#                     "status": str(record.status),
+#                     "recommendation": str(record.recommendation),
+#                     "created_at": record.created_at.strftime("%Y-%m-%d %H:%M:%S") if record.created_at else None
+#                 })
+#             except Exception as e:
+#                 print(f"Erreur lors de la conversion d'un enregistrement: {e}")
+#                 continue
+
+#         return {
+#             "success": True,
+#             "data": result,
+#             "total": total,
+#             "limit": limit,
+#             "offset": offset
+#         }
+
+#     except Exception as e:
+#         print(f"Erreur dans get_prediction_history: {str(e)}")
+#         # Renvoyer une réponse plus détaillée pour le debug
+#         return {
+#             "success": False,
+#             "error": str(e),
+#             "detail": "Erreur lors de la récupération de l'historique"
+#         }
+
+
 @app.get("/api/history")
 async def get_prediction_history(
     db: Session = Depends(get_db),
-    limit: int = 10,  # Par défaut 10 éléments
+    limit: int = 10,
     offset: int = 0
 ):
     try:
-        # Log pour debug
-        print(f"Tentative de récupération de l'historique: limit={limit}, offset={offset}")
-
-        # Requête avec gestion explicite des erreurs
-        query = db.query(PredictionHistory)\
-            .order_by(PredictionHistory.created_at.desc())
+        total = db.execute("SELECT COUNT(*) FROM prediction_history").scalar()
+        query = f"""
+            SELECT * FROM prediction_history 
+            ORDER BY created_at DESC 
+            LIMIT {limit} OFFSET {offset}
+        """
+        records = db.execute(query).fetchall()
         
-        # Compter le total avant pagination
-        total = query.count()
-        print(f"Nombre total d'enregistrements: {total}")
-
-        # Appliquer la pagination
-        records = query.offset(offset).limit(limit).all()
-        print(f"Nombre d'enregistrements récupérés: {len(records)}")
-
-        # Conversion en dictionnaire avec gestion des erreurs
-        result = []
-        for record in records:
-            try:
-                result.append({
-                    "date": record.date.strftime("%Y-%m-%d") if record.date else None,
-                    "article": str(record.article),
-                    "quantity_ordered": float(record.quantity_ordered),
-                    "quantity_predicted": float(record.quantity_predicted),
-                    "delivery_rate": float(record.delivery_rate),
-                    "status": str(record.status),
-                    "recommendation": str(record.recommendation),
-                    "created_at": record.created_at.strftime("%Y-%m-%d %H:%M:%S") if record.created_at else None
-                })
-            except Exception as e:
-                print(f"Erreur lors de la conversion d'un enregistrement: {e}")
-                continue
+        result = [{
+            "id": row[0],
+            "date": str(row[1]),
+            "article": row[2],
+            "quantity_ordered": float(row[3]),
+            "quantity_predicted": float(row[4]),
+            "delivery_rate": float(row[5]),
+            "status": row[6],
+            "recommendation": row[7],
+            "created_at": str(row[8])
+        } for row in records]
+        
+        print("Résultat formaté (premières lignes):")
+        for r in result[:3]:
+            print(r)
 
         return {
             "success": True,
@@ -484,15 +435,9 @@ async def get_prediction_history(
             "limit": limit,
             "offset": offset
         }
-
     except Exception as e:
-        print(f"Erreur dans get_prediction_history: {str(e)}")
-        # Renvoyer une réponse plus détaillée pour le debug
-        return {
-            "success": False,
-            "error": str(e),
-            "detail": "Erreur lors de la récupération de l'historique"
-        }
+        print(f"Error: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 @app.on_event("startup")
 async def startup():
@@ -609,266 +554,60 @@ async def export_predictions(
         raise HTTPException(status_code=500, detail=f"Erreur lors de l'export: {str(e)}")
 
 @app.get("/api/delivery-stats")
-async def get_delivery_stats():
+async def get_delivery_stats(db: Session = Depends(get_db)):
     try:
-        # Charger le fichier Excel
-        df = pd.read_excel('Planif_Livraisons/Planif livraisons.xlsx')
-        df['Date expédition'] = pd.to_datetime(df['Date expédition'])
-        df['Année'] = df['Date expédition'].dt.year
-        df['Mois'] = df['Date expédition'].dt.month
+        # Tendance annuelle
+        yearly_trend = db.execute("""
+            SELECT YEAR(`Date expédition`) as year, SUM(`Qté livrée`) as delivered 
+            FROM livraisons 
+            GROUP BY YEAR(`Date expédition`)
+            ORDER BY year
+        """).fetchall()
 
-        # Données pour la tendance annuelle
-        yearly_trend = df.groupby('Année')['Qté livrée'].sum().reset_index()
-        yearly_trend = yearly_trend.rename(columns={
-            'Année': 'year',
-            'Qté livrée': 'delivered'
-        }).to_dict('records')
+        # Comparaison mensuelle
+        monthly_comparison = db.execute("""
+            SELECT 
+                DATE_FORMAT(`Date expédition`, '%b') as month,
+                SUM(CASE WHEN YEAR(`Date expédition`) = 2022 THEN `Qté livrée` ELSE 0 END) as year2022,
+                SUM(CASE WHEN YEAR(`Date expédition`) = 2023 THEN `Qté livrée` ELSE 0 END) as year2023,
+                SUM(CASE WHEN YEAR(`Date expédition`) = 2024 THEN `Qté livrée` ELSE 0 END) as year2024
+            FROM livraisons 
+            GROUP BY MONTH(`Date expédition`), month
+            ORDER BY MONTH(`Date expédition`)
+        """).fetchall()
 
-        # Données pour la comparaison mensuelle
-        monthly_comparison = df[df['Année'].isin([2022, 2023, 2024])]
-        monthly_data = []
-        month_names = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 
-                      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
-        
-        for month in range(1, 13):
-            month_data = {'month': month_names[month-1]}
-            for year in [2022, 2023, 2024]:
-                quantity = monthly_comparison[
-                    (monthly_comparison['Année'] == year) & 
-                    (monthly_comparison['Mois'] == month)
-                ]['Qté livrée'].sum()
-                month_data[f'year{year}'] = float(quantity)
-            monthly_data.append(month_data)
+        # Distribution articles
+        article_distribution = db.execute("""
+            SELECT `Désignation article` as name, SUM(`Qté livrée`) as value
+            FROM livraisons 
+            GROUP BY `Désignation article`
+            HAVING SUM(`Qté livrée`) >= (
+                SELECT SUM(`Qté livrée`) * 0.05 
+                FROM livraisons
+            )
+            ORDER BY value DESC
+        """).fetchall()
 
-        # Données pour la distribution des articles
-        article_distribution = df.groupby('Désignation article')['Qté livrée'].sum()
-        threshold = article_distribution.sum() * 0.05  # seuil de 5%
-        major_articles = article_distribution[article_distribution >= threshold]
-        others = pd.Series({
-            'Autres': article_distribution[article_distribution < threshold].sum()
-        })
-        article_distribution = pd.concat([major_articles, others])
-        article_data = [
-            {'name': name, 'value': float(value)} 
-            for name, value in article_distribution.items()
-        ]
-
-        # Données pour la comparaison commandes/livraisons
-        comparison_data = df.groupby('Année').agg({
-            'Qté cdée': 'sum',
-            'Qté livrée': 'sum'
-        }).reset_index()
-        comparison_data = comparison_data.rename(columns={
-            'Année': 'year',
-            'Qté cdée': 'ordered',
-            'Qté livrée': 'delivered'
-        }).to_dict('records')
+        # Comparaison commandes/livraisons
+        comparison_data = db.execute("""
+            SELECT 
+                YEAR(`Date expédition`) as year,
+                SUM(`Qté cdée`) as ordered,
+                SUM(`Qté livrée`) as delivered
+            FROM livraisons 
+            GROUP BY YEAR(`Date expédition`)
+            ORDER BY year
+        """).fetchall()
 
         return {
-            "yearlyTrend": yearly_trend,
-            "monthlyComparison": monthly_data,
-            "articleDistribution": article_data,
-            "orderDeliveryComparison": comparison_data
+            "yearlyTrend": [dict(row) for row in yearly_trend],
+            "monthlyComparison": [dict(row) for row in monthly_comparison],
+            "articleDistribution": [dict(row) for row in article_distribution],
+            "orderDeliveryComparison": [dict(row) for row in comparison_data]
         }
 
     except Exception as e:
-        print(f"❌ Erreur lors de la récupération des statistiques: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
-        )
-
-@app.get("/api/hr/alerts", response_model=List[Alert])
-async def get_alerts():
-    # Simulation de données d'alerte
-    alerts = [
-        Alert(
-            id="1",
-            type="warning",
-            department="IT",
-            message="Taux de rotation élevé ce mois-ci",
-            value=15,
-            threshold=10,
-            date=datetime.now().isoformat()
-        ),
-        Alert(
-            id="2",
-            type="danger",
-            department="Sales",
-            message="Sous-effectif critique",
-            value=5,
-            threshold=8,
-            date=datetime.now().isoformat()
-        ),
-        Alert(
-            id="3",
-            type="info",
-            department="HR",
-            message="Nouveau processus de recrutement mis en place",
-            date=datetime.now().isoformat()
-        )
-    ]
-    return alerts
-
-@app.get("/api/hr/department-stats", response_model=List[DepartmentStats])
-async def get_department_stats():
-    # Simulation de statistiques par département
-    stats = []
-    for i, dept in enumerate(DEPARTMENTS):
-        stats.append(
-            DepartmentStats(
-                id=str(i+1),
-                name=dept,
-                currentStaff=random.randint(10, 50),
-                targetStaff=random.randint(15, 55),
-                turnoverRate=round(random.uniform(0.05, 0.20), 2),
-                avgPerformance=round(random.uniform(0.70, 0.95), 2)
-            )
-        )
-    return stats
-
-@app.get("/api/hr/predictions")
-async def get_hr_predictions(page: int = 0, limit: int = 10):
-    # Simulation d'historique de prédictions
-    predictions = []
-    total = 20  # Nombre total de prédictions
-
-    start_date = datetime.now()
-    for i in range(total):
-        date = start_date - pd.Timedelta(days=i)
-        dept = random.choice(DEPARTMENTS)
-        predicted = random.randint(10, 50)
-        actual = predicted + random.randint(-5, 5) if random.random() > 0.2 else None
-        
-        predictions.append(
-            HRPrediction(
-                id=str(i+1),
-                date=date.isoformat(),
-                department=dept,
-                predicted_staff=predicted,
-                actual_staff=actual,
-                accuracy=round(random.uniform(0.85, 0.98), 2) if actual else None,
-                status="success" if actual else "pending"
-            )
-        )
-
-    # Pagination
-    start = page * limit
-    end = start + limit
-    return {
-        "data": predictions[start:end],
-        "total": total
-    }
-
-@app.post("/api/hr/predict", response_model=HRPrediction)
-async def predict_staffing(request: HRPredictionRequest):
-    # Simulation de prédiction
-    predicted_staff = int(
-        request.currentStaff * 
-        (1 - request.turnoverRate) * 
-        (1 + 0.1 * request.workload)
-    )
-    
-    # Calculer un score de fiabilité basé sur les facteurs
-    reliability_score = 100 - (
-        abs(request.turnoverRate * 100) * 0.3 +  # Impact du taux de rotation
-        abs(request.workload - 1) * 20  # Impact de la charge de travail
-    )
-    reliability_score = max(0, min(100, reliability_score))  # Limiter entre 0 et 100
-    
-    # Calculate confidence intervals (±10% of predicted staff)
-    confidence_min = int(predicted_staff * 0.9)
-    confidence_max = int(predicted_staff * 1.1)
-    
-    return HRPrediction(
-        id=str(uuid.uuid4()),  # Using UUID for better uniqueness
-        date=request.date,
-        department=request.department,
-        predicted_staff=predicted_staff,
-        predictedStaff=predicted_staff,  # Set both fields for compatibility
-        actualStaff=request.currentStaff,
-        accuracy=None,  # Will be calculated later when actual data is available
-        confidence_min=confidence_min,
-        confidence_max=confidence_max,
-        status="completed",
-        warning=None if reliability_score > 70 else "Prédiction de fiabilité moyenne",
-        reliability_score=reliability_score,
-        recommendations=[
-            "Surveiller le taux de rotation du personnel",
-            "Évaluer les besoins en formation",
-            "Planifier le recrutement à l'avance"
-        ]
-    )
-
-@app.post("/api/predict-rh", response_model=RHPredictionResponse)
-async def predict_rh(request: RHPredictionRequest):
-    try:
-        print(f"Demande de prédiction reçue pour la date: {request.date}")
-        
-        # Convertir la date en datetime
-        target_date = datetime.strptime(request.date, "%Y-%m-%d")
-        current_date = datetime.now()
-        
-        if target_date <= current_date:
-            raise HTTPException(
-                status_code=400,
-                detail="La date de prédiction doit être dans le futur"
-            )
-        
-        # Obtenir les prédictions hebdomadaires
-        predictions = hr_predictor.predict_staff(
-            current_staff=request.currentStaff,
-            turnover_rate=request.turnoverRate,
-            workload=request.workload,
-            target_date=target_date,
-            department=request.department
-        )
-        
-        response = RHPredictionResponse(
-            id=str(uuid.uuid4())[:8],
-            date=request.date,
-            weekly_predictions=predictions['weekly_predictions'],
-            confidence_intervals=predictions['confidence_intervals'],
-            status="completed",
-            warning=predictions.get('warning'),
-            department=request.department
-        )
-        print("Réponse générée avec succès")
-        return response
-        
-    except Exception as e:
-        print(f"ERREUR lors de la prédiction: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erreur lors de la prédiction RH: {str(e)}"
-        )
-
-@app.get("/api/hr/departments")
-async def get_departments():
-    try:
-        departments = ["Production", "Logistique", "Maintenance", "Qualité", "Ressources Humaines", "Informatique"]
-        return {"departments": departments}
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erreur lors de la récupération des départements: {str(e)}"
-        )
-
-@app.get("/api/hr/stats/{department}")
-async def get_department_stats(department: str):
-    try:
-        # Simulation de statistiques pour le département
-        return {
-            "currentStaff": random.randint(10, 50),
-            "targetStaff": random.randint(15, 55),
-            "turnoverRate": round(random.uniform(0.05, 0.20), 2),
-            "avgPerformance": round(random.uniform(0.70, 0.95), 2)
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Erreur lors de la récupération des statistiques: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

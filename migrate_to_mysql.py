@@ -1,9 +1,19 @@
 import pandas as pd
+import sqlite3
 import mysql.connector
 from sqlalchemy import create_engine
 import os
 
 def migrate_data():
+    # Connexion à l'ancienne base SQLite
+    sqlite_conn = sqlite3.connect('predictions.db')
+
+    # Lire toutes les tables de SQLite
+    tables = pd.read_sql_query(
+        "SELECT name FROM sqlite_master WHERE type='table'", 
+        sqlite_conn
+    )
+
     # Configuration MySQL
     mysql_config = {
         'user': 'mikana_user',
@@ -14,6 +24,20 @@ def migrate_data():
 
     # Création de la connexion SQLAlchemy
     engine = create_engine(f"mysql+pymysql://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}/{mysql_config['database']}")
+
+    # Migration de chaque table
+    for table_name in tables['name']:
+        # Lire les données de SQLite
+        df = pd.read_sql_query(f"SELECT * FROM {table_name}", sqlite_conn)
+        
+        # Écrire dans MySQL
+        df.to_sql(
+            table_name, 
+            engine, 
+            if_exists='replace', 
+            index=False
+        )
+    sqlite_conn.close()
 
     # Migration des commandes
     print("Migration des commandes...")

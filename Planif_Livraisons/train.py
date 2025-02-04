@@ -33,13 +33,13 @@ def load_and_preprocess_data(file_path):
     
     return data_encoded
 
-def prepare_train_test_data(data):
-    """
-    Prépare les données d'entraînement et de test
-    """
-    X = data.drop('Qté livrée', axis=1)
-    y = data['Qté livrée']
-    return train_test_split(X, y, test_size=0.2, random_state=42)
+# def prepare_train_test_data(data):
+#     """
+#     Prépare les données d'entraînement et de test
+#     """
+#     X = data.drop('Qté livrée', axis=1)
+#     y = data['Qté livrée']
+#     return train_test_split(X, y, test_size=0.2, random_state=42)
 
 def train_xgboost_model(X_train, y_train):
     """
