@@ -120,18 +120,6 @@ export default function PredictionResult({ predictions, formData }: PredictionRe
                     Intervalle de confiance: [{pred.intervalle_confiance.min} - {pred.intervalle_confiance.max}]
                   </div>
                 )}
-
-                {pred.statistiques && !isPeriod && (
-                  <div className="text-sm grid grid-cols-2 gap-2 mt-2 text-slate-600 dark:text-slate-300">
-                    <div>Moyenne historique: {pred.statistiques.moyenne_historique}</div>
-                    <div>Nombre de données: {pred.statistiques.nombre_donnees}</div>
-                    <div>Minimum historique: {pred.statistiques.minimum_historique}</div>
-                    <div>Maximum historique: {pred.statistiques.maximum_historique}</div>
-                    {pred.statistiques.tendance && (
-                      <div>Tendance: {pred.statistiques.tendance > 0 ? '↗️' : '↘️'} {Math.abs(pred.statistiques.tendance)}%</div>
-                    )}
-                  </div>
-                )}
               </div>
             ))}
           </div>

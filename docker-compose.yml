@@ -10,13 +10,9 @@ services:
      - "3306:3306"
    volumes:
      - mysql_data:/var/lib/mysql
-     - ./dumps:/docker-entrypoint-initdb.d  # Pour l'import automatique
-   command: >
-     --innodb_buffer_pool_size=256M
-     --innodb_log_file_size=128M
-     --innodb_flush_method=O_DIRECT
-     --innodb_flush_log_at_trx_commit=2
-     --max_connections=200
+     - ./dumps:/dumps
+     - ./mysql-dump.sh:/docker-entrypoint-initdb.d/mysql-dump.sh
+   command: ["bash", "/docker-entrypoint-initdb.d/mysql-dump.sh"]
    networks:
      - mikana-network
    
