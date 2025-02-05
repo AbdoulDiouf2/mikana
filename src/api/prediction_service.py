@@ -100,12 +100,13 @@ async def predict(request: PredictionRequest):
         
         if request.dateType == 'single':
             # Cas d'une seule date
-            dates_prediction = pd.DatetimeIndex([pd.to_datetime(request.date)])
+            date = pd.to_datetime(request.date).tz_localize(None)
+            dates_prediction = pd.DatetimeIndex([date])
             print(f"Date unique: {request.date}")
         elif request.dateType == 'period':
             # Cas d'une période
-            start_date = pd.to_datetime(request.date)
-            end_date = pd.to_datetime(request.endDate)
+            start_date = pd.to_datetime(request.date).tz_localize(None)
+            end_date = pd.to_datetime(request.endDate).tz_localize(None)
             dates_prediction = pd.date_range(
                 start=start_date,
                 end=end_date,

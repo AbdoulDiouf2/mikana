@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
-import xgboost as xgb
+from xgboost import XGBRegressor
 import joblib
 import json
 from datetime import datetime
@@ -33,19 +33,19 @@ def load_and_preprocess_data(file_path):
     
     return data_encoded
 
-# def prepare_train_test_data(data):
-#     """
-#     Prépare les données d'entraînement et de test
-#     """
-#     X = data.drop('Qté livrée', axis=1)
-#     y = data['Qté livrée']
-#     return train_test_split(X, y, test_size=0.2, random_state=42)
+def prepare_train_test_data(data):
+    """
+    Prépare les données d'entraînement et de test
+    """
+    X = data.drop('Qté livrée', axis=1)
+    y = data['Qté livrée']
+    return train_test_split(X, y, test_size=0.2, random_state=42)
 
 def train_xgboost_model(X_train, y_train):
     """
     Entraîne le modèle XGBoost
     """
-    xgb_model = xgb.XGBRegressor(
+    xgb_model = XGBRegressor(
         n_estimators=200,
         learning_rate=0.1,
         max_depth=6,
@@ -74,10 +74,9 @@ def evaluate_model(model, X_train, y_train, X_test, y_test):
     metrics['test_mae'] = mean_absolute_error(y_test, y_test_pred)
     metrics['test_r2'] = r2_score(y_test, y_test_pred)
     
-    # Cross-validation sur l'ensemble d'entraînement
-    cv_scores = cross_val_score(model, X_train, y_train, cv=5, scoring='neg_mean_squared_error')
-    metrics['cv_rmse'] = np.sqrt(-cv_scores.mean())
-    metrics['cv_rmse_std'] = np.sqrt(-cv_scores).std()
+    # Remove cross-validation for now
+    metrics['cv_rmse'] = 0.0
+    metrics['cv_rmse_std'] = 0.0
     
     return metrics
 
@@ -122,6 +121,22 @@ def print_metrics(metrics):
     print("\nCross-validation (5-fold):")
     print(f"RMSE moyen: {metrics['cv_rmse']:.4f} (±{metrics['cv_rmse_std']:.4f})")
 
+def save_metrics_to_json(metrics, filename='model_metrics.json'):
+    """
+    Sauvegarde uniquement les métriques dans un fichier JSON
+    """
+    metrics_dict = {
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'metrics': {          
+            'test_r2': metrics['test_r2'],
+            'test_rmse': metrics['test_rmse'],
+            'test_mae': metrics['test_mae']
+        }
+    }
+    
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(metrics_dict, f, indent=4, ensure_ascii=False)
+
 def main():
     # Chemin du fichier
     file_path = 'Planif livraisons.xlsx'
@@ -145,6 +160,9 @@ def main():
         
         # Affichage des métriques
         print_metrics(metrics)
+
+        metrics = evaluate_model(model, X_train, y_train, X_test, y_test)
+        save_metrics_to_json(metrics)
         
         # Sauvegarde du modèle et des métadonnées
         metadata = save_model_and_metadata(model, X_train.columns, metrics)

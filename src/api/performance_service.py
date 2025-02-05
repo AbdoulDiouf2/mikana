@@ -93,38 +93,33 @@ def get_db_connection():
         logging.error(f"Erreur de connexion à MySQL : {e}")
         raise
 
-def save_metrics_to_db(model_name: str, metrics: dict, additional_info: str = None):
-    """Sauvegarde les métriques d'entraînement dans la base de données"""
+def save_metrics_to_db(model_name: str, metrics: dict, db: Session, additional_info: str = None):
+    """Sauvegarde les métriques d'entraînement dans la base de données en utilisant SQL"""
     try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
-        
         query = """
             INSERT INTO metrics_history 
             (model_name, r2_score, mae, rmse, training_date, additional_info)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES 
+            (:model_name, :r2_score, :mae, :rmse, :training_date, :additional_info)
         """
-        values = (
-            model_name,
-            metrics.get('test_r2', metrics.get('r2', None)),
-            metrics.get('test_mae', metrics.get('mae', None)),
-            metrics.get('test_rmse', metrics.get('rmse', None)),
-            datetime.utcnow(),
-            additional_info
-        )
         
-        cursor.execute(query, values)
-        connection.commit()
+        values = {
+            "model_name": model_name,
+            "r2_score": metrics.get('test_r2'),
+            "mae": metrics.get('test_mae'),
+            "rmse": metrics.get('test_rmse'),
+            "training_date": datetime.utcnow(),
+            "additional_info": additional_info
+        }
+        
+        db.execute(query, values)
+        db.commit()
         
         logging.info(f"Métriques sauvegardées pour le modèle {model_name}")
         
-    except Error as e:
+    except Exception as e:
         logging.error(f"Erreur lors de la sauvegarde des métriques : {str(e)}")
         raise
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
 
 # ------------------- Endpoints -------------------
 @app.get("/api/performance/overview", response_model=PerformanceResponse)
@@ -299,7 +294,7 @@ async def train_commandes_model(db: Session = Depends(get_db)):
     """Endpoint pour entraîner le modèle de prédiction des commandes"""
     try:
         base_dir = BASE_DIR / "Predict_commande"
-        subprocess.run(["python", "train.py"], cwd=base_dir, check=True)
+        subprocess.run(["python", "train_commande.py"], cwd=base_dir, check=True)
         
         metrics_path = base_dir / "trained_models" / "model_metrics.json"
         with open(metrics_path, 'r') as f:
@@ -307,7 +302,7 @@ async def train_commandes_model(db: Session = Depends(get_db)):
         
         save_metrics_to_db(
             "Prédiction Commandes",
-            metrics.get('metrics', {}),
+            metrics, db,
             f"Entraînement effectué le {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
         
@@ -332,7 +327,7 @@ async def train_livraisons_model(db: Session = Depends(get_db)):
         
         save_metrics_to_db(
             "Planification Livraisons",
-            metrics.get('metrics', {}),
+            metrics.get('metrics', {}), db,
             f"Entraînement effectué le {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
         
@@ -349,7 +344,7 @@ async def train_rh_model(db: Session = Depends(get_db)):
     """Endpoint pour entraîner le modèle de gestion RH"""
     try:
         base_dir = BASE_DIR / "Gestion_RH"
-        subprocess.run(["python", "train.py"], cwd=base_dir, check=True)
+        subprocess.run(["python", "Predictions_budget_RH_vf.py"], cwd=base_dir, check=True)
         
         metrics_path = base_dir / "model_metrics.json"
         with open(metrics_path, 'r') as f:
@@ -357,7 +352,7 @@ async def train_rh_model(db: Session = Depends(get_db)):
         
         save_metrics_to_db(
             "Gestion RH",
-            metrics.get('metrics', {}),
+            metrics, db,
             f"Entraînement effectué le {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
         

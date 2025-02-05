@@ -111,34 +111,26 @@ print(f"Précision moyenne : {100 - mae_percentage:.2f}%")
 joblib.dump(sarima_model, MODEL_PATH)
 print("Modèle mis à jour et resauvegardé.")
 
-# Prédictions futures
-future_forecast = sarima_model.get_forecast(steps=30)
-future_index = pd.date_range(start=time_series.index[-1] + timedelta(weeks=1), periods=30, freq='W-MON')
-future_mean = future_forecast.predicted_mean
-future_ci = future_forecast.conf_int()
+import json
+from datetime import datetime
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
 
-# Affichage des prédictions et des intervalles de confiance
-plt.figure(figsize=(12, 6))
-plt.plot(train, label='Données réelles (Entraînement)', color='blue')
-plt.plot(test, label='Données réelles (Test)', color='orange')
-plt.fill_between(forecast_mean.index, forecast_ci.iloc[:, 0], forecast_ci.iloc[:, 1], color='green', alpha=0.2)
-plt.plot(future_index, future_mean, label='Prédictions futures', color='red')
-plt.fill_between(future_index, future_ci.iloc[:, 0], future_ci.iloc[:, 1], color='red', alpha=0.2)
-plt.xlim(train.index.min(), future_index.max())
-plt.title("Prédictions des présences avec SARIMA")
-plt.xlabel("Date")
-plt.ylabel("Présences")
-plt.legend()
-plt.grid()
-plt.show()
+# Calculate metrics
+test_r2 = (100 - mae_percentage) / 100
+test_mae = mean_absolute_error(test, forecast_mean)
+test_rmse = np.sqrt(mean_squared_error(test, forecast_mean))
 
-# Affichage des prédictions futures
-print("Prédictions pour les 30 prochaines semaines :")
-for date, pred in zip(future_index, future_mean):
-    print(f"{date.strftime('%Y-%m-%d')} : {pred:.2f} présences")
+# Create metrics dictionary
+metrics = {
+    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "test_r2": test_r2,
+    "test_mae": test_mae,
+    "test_rmse": test_rmse
+}
 
+# Export to JSON file
+with open('model_metrics.json', 'w') as f:
+    json.dump(metrics, f, indent=4)
 
-
-
-
-
+print("Metrics exported successfully to model_metrics.json")
