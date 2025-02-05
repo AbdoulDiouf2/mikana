@@ -1,7 +1,8 @@
 import pandas as pd
 import sqlite3
 import mysql.connector
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Table, Column, Integer, Float, String, DateTime, MetaData
+from datetime import datetime
 import os
 
 def migrate_data():
@@ -97,6 +98,27 @@ def migrate_data():
         print("Import des présences réussi!")
     except Exception as e:
         print(f"Erreur lors de l'import des présences: {str(e)}")
+
+    # Création de la table metrics_history
+    print("Création de la table metrics_history...")
+    try:
+        # Créer la table metrics_history avec SQLAlchemy
+        metadata = MetaData()
+        metrics_history = Table('metrics_history', metadata,
+            Column('id', Integer, primary_key=True, autoincrement=True),
+            Column('model_name', String(100), nullable=False),
+            Column('r2_score', Float),
+            Column('mae', Float),
+            Column('rmse', Float),
+            Column('training_date', DateTime, default=datetime.utcnow),
+            Column('additional_info', String(500))  # Pour stocker des informations supplémentaires si nécessaire
+        )
+
+        # Créer la table dans la base de données
+        metadata.create_all(engine)
+        print("Table metrics_history créée avec succès!")
+    except Exception as e:
+        print(f"Erreur lors de la création de la table metrics_history: {str(e)}")
 
     print("Migration terminée !")
 

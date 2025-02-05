@@ -149,7 +149,7 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
             key={m}
             onClick={() => setModule(m)}
             className={`px-4 py-2 rounded-lg capitalize ${
-              module === m ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+              module === m ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:text-white'
             }`}
           >
             {m}
@@ -158,16 +158,16 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
       </div>
 
       {/* Informations sur les fichiers requis */}
-      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-        <h3 className="font-semibold mb-3">Critères d'upload</h3>
+      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+        <h3 className="font-semibold mb-3 dark:text-white">Critères d'upload</h3>
         
         {UPLOAD_REQUIREMENTS
           .filter(req => req.module === module)
           .map((req, index) => (
             <div key={index} className="space-y-2">
               <div>
-                <span className="font-medium">Fichiers requis :</span>
-                <ul className="list-disc list-inside">
+                <span className="font-medium dark:text-white">Fichiers requis :</span>
+                <ul className="list-disc list-inside dark:text-gray-300">
                   {req.requiredFiles.map((file, i) => (
                     <li key={i}>{file}</li>
                   ))}
@@ -176,16 +176,16 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
               
               {module === "commandes" && (
                 <div>
-                  <span className="font-medium">Dernier fichier présent :</span>
-                  <div className="text-sm text-gray-600">
+                  <span className="font-medium dark:text-white">Dernier fichier présent :</span>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
                     {lastFilePresent || "Aucun fichier trouvé"}
                   </div>
                 </div>
               )}
               
               {req.notes && (
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">Note :</span> {req.notes}
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="font-medium dark:text-white">Note :</span> {req.notes}
                 </div>
               )}
             </div>
@@ -200,8 +200,8 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
             onClick={() => setUploadMode(mode as "files" | "folder")}
             className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
               uploadMode === mode 
-                ? 'bg-teal-500 text-white' 
-                : 'bg-gray-200 hover:bg-gray-300'
+                ? 'bg-teal-500 text-white dark:bg-teal-900 dark:text-white' 
+                : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
             <UploadCloud className="w-4 h-4" />
@@ -211,13 +211,13 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
         
         {/* Ajouter le bouton dossier désactivé */}
         <button
-          className="px-4 py-2 rounded-lg flex items-center gap-2 bg-gray-200 text-gray-400 cursor-not-allowed relative"
+          className="px-4 py-2 rounded-lg flex items-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed relative"
           title="Non disponible - Fonctionnalité désactivée"
           disabled
         >
           <UploadCloud className="w-4 h-4" />
           Dossier
-          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity">
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-700 dark:bg-gray-900 text-white dark:text-gray-500 text-xs px-2 py-1 rounded opacity-0 hover:opacity-100 transition-opacity">
             Non disponible
           </div>
         </button>
@@ -227,31 +227,31 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
       <div 
             {...getRootProps()}
             className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors
-            ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
+            ${isDragActive 
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'}`}
             >
             <input {...inputProps} />
             <div className="space-y-2">
-            <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="text-lg font-medium text-gray-900">
+            <UploadCloud className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+            <p className="text-lg font-medium text-gray-900 dark:text-white">
                 {isDragActive ? 'Déposez vos fichiers ici' : 'Glissez-déposez ou cliquez pour sélectionner'}
             </p>
-            <p className="text-sm text-gray-500">
-                {uploadMode === 'folder' 
-                ? 'Sélectionnez un dossier entier' 
-                : 'Fichiers CSV/Excel uniquement'}
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+                {uploadMode === 'folder' ? 'Sélectionnez un dossier entier' : 'Fichiers CSV/Excel uniquement'}
             </p>
         </div>
       </div>
 
       {/* Messages d'état */}
       {error && (
-        <div className="p-4 bg-red-100 text-red-700 rounded-lg">
+        <div className="p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-400 rounded-lg">
           {error}
         </div>
       )}
       
       {success && (
-        <div className="p-4 bg-green-100 text-green-700 rounded-lg">
+        <div className="p-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-400 rounded-lg">
           {success}
         </div>
       )}
@@ -261,12 +261,12 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
       {selectedFiles.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium">
+            <h3 className="font-medium dark:text-white">
               {selectedFiles.length} fichier{selectedFiles.length > 1 ? 's' : ''} sélectionné{selectedFiles.length > 1 ? 's' : ''}
             </h3>
             <button
               onClick={() => setSelectedFiles([])}
-              className="text-red-500 hover:text-red-700 text-sm"
+              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"
             >
               Tout effacer
             </button>
@@ -276,11 +276,11 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
             {selectedFiles.map((file, index) => (
               <div 
                 key={`${file.name}-${index}`}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
               >
                 <div className="flex items-center gap-3 truncate">
-                  <span className="font-mono text-sm truncate">{file.name}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="font-mono text-sm truncate dark:text-white">{file.name}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     {(file.size / 1024).toFixed(1)} Ko
                   </span>
                 </div>
@@ -289,7 +289,7 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
                     e.stopPropagation();
                     removeFile(index);
                   }}
-                  className="text-gray-400 hover:text-red-500"
+                  className="text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -302,8 +302,8 @@ export function FileUploader({ onUpload }: FileUploaderProps) {
             disabled={isUploading}
             className={`w-full py-3 rounded-lg font-medium transition-colors ${
               isUploading 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-green-500 hover:bg-green-600 text-white'
+                ? 'bg-gray-400 cursor-not-allowed dark:bg-gray-700' 
+                : 'bg-green-500 hover:bg-green-600 dark:bg-green-900 dark:hover:bg-green-800 text-white'
             }`}
           >
             {isUploading ? (

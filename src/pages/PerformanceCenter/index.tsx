@@ -8,7 +8,7 @@ export default function PerformanceCenter() {
   return (
     <Box
       sx={{
-        bgcolor: theme.palette.mode === 'dark' ? 'background.default' : '#fff',
+        bgcolor: theme.palette.mode === 'dark' ? '#030712' : '#fff',
         minHeight: '100vh',
         color: theme.palette.text.primary
       }}
@@ -18,9 +18,10 @@ export default function PerformanceCenter() {
         sx={{
           maxWidth: 'lg',
           mx: 'auto',
-          p: 3,
-          bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : '#fff',
-          borderRadius: 2
+          p: 0,
+          bgcolor: theme.palette.mode === 'dark' ? '#111827' : '#fff',
+          borderRadius: 0,
+          color: theme.palette.mode === 'dark' ? '#fff' : 'inherit'
         }}
       >
         <PerformanceMetrics />
