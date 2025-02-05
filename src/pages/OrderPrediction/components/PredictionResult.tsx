@@ -61,7 +61,7 @@ export default function PredictionResult({ predictions, formData }: PredictionRe
             )}
             {isPeriod && (
               <div className="text-sm text-slate-600 dark:text-slate-300 mt-2">
-                Période: du {predictions[0].date} au {predictions[predictions.length - 1].date}
+                Période: du {new Date(predictions[0].date).toLocaleDateString('fr-FR')} au {new Date(predictions[predictions.length - 1].date).toLocaleDateString('fr-FR')}
               </div>
             )}
           </div>
@@ -91,7 +91,13 @@ export default function PredictionResult({ predictions, formData }: PredictionRe
               <div key={idx} className="p-4 border border-slate-200 dark:border-slate-600 rounded-lg space-y-3 bg-white dark:bg-slate-700">
                 <div className="flex justify-between items-start">
                   <div>
-                    <div className="text-sm text-slate-500 dark:text-slate-400">Date: {pred.date}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                      Date: {new Date(pred.date).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })}
+                    </div>
                     <div className="text-2xl font-semibold mt-1 text-gray-900 dark:text-gray-100">
                       {pred.prediction} unités
                     </div>

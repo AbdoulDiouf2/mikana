@@ -1,82 +1,99 @@
 services:
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: admin
-      MYSQL_DATABASE: mikana_db
-      MYSQL_USER: mikana_user
-      MYSQL_PASSWORD: mikana_password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    command: >
-      --innodb_buffer_pool_size=256M
-      --innodb_log_file_size=128M
-      --innodb_flush_method=O_DIRECT
-      --innodb_flush_log_at_trx_commit=2
-      --max_connections=200
-    networks:
-      - mikana-network
-    
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-    networks:
-      - mikana-network
+ mysql:
+   image: mysql:8.0
+   environment:
+     MYSQL_ROOT_PASSWORD: admin
+     MYSQL_DATABASE: mikana_db
+     MYSQL_USER: mikana_user 
+     MYSQL_PASSWORD: mikana_password
+   ports:
+     - "3306:3306"
+   volumes:
+     - mysql_data:/var/lib/mysql
+     - ./dumps:/docker-entrypoint-initdb.d  # Pour l'import automatique
+   command: >
+     --innodb_buffer_pool_size=256M
+     --innodb_log_file_size=128M
+     --innodb_flush_method=O_DIRECT
+     --innodb_flush_log_at_trx_commit=2
+     --max_connections=200
+   networks:
+     - mikana-network
+   
+ redis:
+   image: redis:alpine
+   ports:
+     - "6379:6379"
+   networks:
+     - mikana-network
 
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: admin
-      UPLOAD_LIMIT: 300M
-    ports:
-      - "8080:80"
-    depends_on:
-      - mysql
-    networks:
-      - mikana-network
+ phpmyadmin:
+   image: phpmyadmin/phpmyadmin
+   environment:
+     PMA_HOST: mysql
+     PMA_PORT: 3306
+     MYSQL_ROOT_PASSWORD: admin
+     UPLOAD_LIMIT: 300M
+   ports:
+     - "8080:80"
+   depends_on:
+     - mysql
+   networks:
+     - mikana-network
 
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    ports:
-      - "8000:8000"
-      - "8001:8001"
-    volumes:
-      - .:/app
-    environment:
-      DATABASE_URL: mysql://mikana_user:mikana_password@mysql:3306/mikana_db
-      WORKERS: 2
-      LOG_LEVEL: warning
-    depends_on:
-      - mysql
-    networks:
-      - mikana-network
+ backend:
+   build:
+     context: .
+     dockerfile: Dockerfile.backend
+   ports:
+     - "8000:8000"
+     - "8001:8001"
+   volumes:
+     - .:/app
+   environment:
+     DATABASE_URL: mysql://mikana_user:mikana_password@mysql:3306/mikana_db
+     WORKERS: 2
+     LOG_LEVEL: warning
+   depends_on:
+     - mysql
+   networks:
+     - mikana-network
 
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    ports:
-      - "5173:5173"
-    volumes:
-      - .:/app
-      - node_modules:/app/node_modules
-    depends_on:
-      - backend
-    networks:
-      - mikana-network
+ frontend:
+   build:
+     context: .
+     dockerfile: Dockerfile.frontend
+   ports:
+     - "5173:5173"
+   volumes:
+     - .:/app
+     - node_modules:/app/node_modules
+   depends_on:
+     - backend
+   networks:
+     - mikana-network
+
+ backup:
+   image: alpine
+   volumes:
+     - ./dumps:/dumps
+   depends_on:
+     - mysql
+   command: |
+     /bin/sh -c '
+     apk add mysql-client
+     while true; do
+       mysqldump -h mysql -u root -padmin mikana_db metrics_history > /dumps/backup.sql
+       sleep 1800
+     done'
+   networks:
+     - mikana-network
 
 networks:
-  mikana-network:
-    driver: bridge
+ mikana-network:
+   driver: bridge
 
 volumes:
-  mysql_data: # Ajout de la définition du volume MySQL
-    driver: local
-  node_modules:
+ mysql_data:
+   driver: local
+ node_modules:

@@ -39,13 +39,7 @@ const Dashboard = () => {
       name: "ESIGELEC",
       image: "/Images/Logo_ESIGELEC.svg.png",
       description: "École d'Ingénieurs"
-    },
-    {
-      name: "Aptar",
-      image: "/Images/aptar.png",
-      description: "Partenaire Industriel"
-    }
-  ];
+    }];
 
   return (
     <Container maxWidth="xl">
@@ -61,7 +55,7 @@ const Dashboard = () => {
           background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
           borderRadius: 2,
           color: 'white',
-          mb: 6
+          mb: 5
         }}
       >
         <Box
@@ -135,7 +129,7 @@ const Dashboard = () => {
               component={motion.div}
               whileHover={{ scale: 1.05 }}
               sx={{ height: '100%' }}
-            >
+              >
               <CardMedia
                 component="img"
                 height="140"
