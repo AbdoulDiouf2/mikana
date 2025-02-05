@@ -15,14 +15,13 @@ import os
 import numpy as np
 from pathlib import Path
 import uuid
-import aioredis
 from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import Paragraph
+from datetime import timedelta
 
 app = FastAPI()
 
@@ -420,11 +419,6 @@ async def get_prediction_history(
         print(f"Error: {str(e)}")
         return {"success": False, "error": str(e)}
 
-@app.on_event("startup")
-async def startup():
-    redis = aioredis.from_url("redis://redis:6379", encoding="utf8")
-    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
-
 @app.get("/api/export/{format}")
 async def export_predictions(
     format: str,
@@ -587,6 +581,80 @@ async def get_delivery_stats(db: Session = Depends(get_db)):
             "orderDeliveryComparison": [dict(row) for row in comparison_data]
         }
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Définir les chemins relatifs par rapport au dossier de l'API
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MODEL_PATH = os.path.join(BASE_DIR, "Gestion_RH", "sarima_model.joblib")
+DATA_PATH = os.path.join(BASE_DIR, "Gestion_RH", "Total_Presents_Final.xlsx")
+
+# Charger le modèle SARIMA
+try:
+    sarima_model = joblib.load(MODEL_PATH)
+    print("Modèle SARIMA chargé avec succès.")
+except FileNotFoundError:
+    raise RuntimeError("Le modèle SARIMA n'a pas été trouvé. Entraînez-le d'abord.")
+
+# Convertir Année + Semaines en Date
+def year_week_to_date(year, week):
+    # Extraire le numéro de semaine (retirer le 'S' et convertir en entier)
+    week_num = int(week.replace('S', ''))
+    # Créer une date pour le premier jour de l'année
+    first_day = datetime(year, 1, 1)
+    # Trouver le premier lundi de l'année
+    first_monday = first_day + timedelta(days=(7 - first_day.weekday()) % 7)
+    # Ajouter le nombre de semaines nécessaire
+    return first_monday + timedelta(weeks=week_num-1)
+
+# Charger les données et créer la colonne Date
+print("Chargement des données...")
+# Lire le fichier en spécifiant le séparateur décimal
+df = pd.read_excel(DATA_PATH, decimal=',')
+# Créer la colonne Date
+df['Date'] = df.apply(lambda row: year_week_to_date(int(row['Annee']), row['Semaines']), axis=1)
+df['Date'] = pd.to_datetime(df['Date'])
+# Trier les données par date
+df = df.sort_values('Date')
+last_date = df['Date'].max()
+print(f"Dernière date dans les données : {last_date.strftime('%Y-%m-%d')}")
+
+# Définir la structure de la requête
+class SARIMAPredictionRequest(BaseModel):
+    weeks: int = 30  # Nombre de semaines à prédire par défaut
+
+@app.post("/api/predict-sarima")
+async def predict_sarima(request: SARIMAPredictionRequest):
+    try:
+        # Déterminer la date de début des prédictions (s'assurer que c'est un lundi)
+        start_date = last_date + timedelta(weeks=1)
+        # Ajuster au lundi si nécessaire
+        start_date = start_date - timedelta(days=start_date.weekday())
+        
+        # Créer l'index des dates futures (uniquement des lundis)
+        future_index = pd.date_range(start=start_date, 
+                                   periods=request.weeks, 
+                                   freq='W-MON')  # W-MON force les dates à être des lundis
+        
+        # Faire les prévisions
+        future_forecast = sarima_model.get_forecast(steps=request.weeks)
+        future_mean = future_forecast.predicted_mean
+        future_ci = future_forecast.conf_int()
+        
+        # Construire la réponse
+        predictions = []
+        for date, pred, ci_lower, ci_upper in zip(future_index, future_mean, 
+                                                future_ci.iloc[:, 0], 
+                                                future_ci.iloc[:, 1]):
+            # Calculer la fin de la semaine (dimanche)
+            week_end = date + timedelta(days=6)  # +6 jours pour aller du lundi au dimanche
+            predictions.append({
+                "period": f"{date.strftime('%d/%m/%Y')} - {week_end.strftime('%d/%m/%Y')}",
+                "predicted_presences": round(pred, 2),
+                "confidence_interval": [round(ci_lower, 2), round(ci_upper, 2)]
+            })
+        
+        return {"predictions": predictions}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
