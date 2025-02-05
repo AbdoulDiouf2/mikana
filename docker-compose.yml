@@ -55,7 +55,6 @@ services:
       LOG_LEVEL: warning
     depends_on:
       - mysql
-    command: ["sh", "/app/entrypoint.sh"]
     networks:
       - mikana-network
 

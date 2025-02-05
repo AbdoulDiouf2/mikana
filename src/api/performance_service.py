@@ -14,7 +14,7 @@ from datetime import datetime
 import aiofiles
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from .database import SessionLocal, MetricsHistory, get_db
+from .database import SessionLocal, get_db
 
 # Configuration des logs
 logging.basicConfig(level=logging.DEBUG)

@@ -37,3 +37,4 @@ redis
 aioredis
 fastapi-cache2
 statsmodels
+cryptography
