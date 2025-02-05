@@ -100,31 +100,31 @@ export default function PredictionForm({ onPredictionResult }: PredictionFormPro
 
   return (
     <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm space-y-6">
-      <h2 className="text-xl font-semibold mb-6">Paramètres de Prédiction</h2>
+      <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-6">Paramètres de Prédiction</h2>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Type de Prédiction
           </label>
           <div className="flex space-x-4">
-            <label className="flex items-center">
+            <label className="flex items-center text-gray-700 dark:text-gray-200">
               <input
                 type="radio"
                 value="single"
                 checked={formData.dateType === 'single'}
                 onChange={() => setFormData({ ...formData, dateType: 'single' as const })}
-                className="mr-2"
+                className="mr-2 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
               />
               Date unique
             </label>
-            <label className="flex items-center">
+            <label className="flex items-center text-gray-700 dark:text-gray-200">
               <input
                 type="radio"
                 value="period"
                 checked={formData.dateType === 'period'}
                 onChange={() => setFormData({ ...formData, dateType: 'period' as const })}
-                className="mr-2"
+                className="mr-2 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
               />
               Période
             </label>
@@ -133,14 +133,14 @@ export default function PredictionForm({ onPredictionResult }: PredictionFormPro
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {formData.dateType === 'single' ? 'Date de Prédiction' : 'Date de Début'} *
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-300 w-5 h-5" />
               <input
                 type="date"
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 required
@@ -150,14 +150,14 @@ export default function PredictionForm({ onPredictionResult }: PredictionFormPro
 
           {formData.dateType === 'period' && (
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Date de Fin *
               </label>
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-300 w-5 h-5" />
                 <input
                   type="date"
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                   required
@@ -168,11 +168,11 @@ export default function PredictionForm({ onPredictionResult }: PredictionFormPro
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Établissement (optionnel)
           </label>
           <select
-            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             value={formData.establishment}
             onChange={(e) => setFormData({ ...formData, establishment: e.target.value })}
           >
@@ -184,11 +184,11 @@ export default function PredictionForm({ onPredictionResult }: PredictionFormPro
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Type de Linge (optionnel)
           </label>
           <select
-            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             value={formData.linenType}
             onChange={(e) => setFormData({ ...formData, linenType: e.target.value })}
           >
@@ -200,27 +200,32 @@ export default function PredictionForm({ onPredictionResult }: PredictionFormPro
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Facteurs Additionnels
           </label>
           <div className="space-y-2">
             {additionalFactors.map((factor) => (
-              <label key={factor.id} className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+              <label key={factor.id} className={`flex items-center space-x-3 p-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 ${formData.factors.includes(factor.id) ? '' : 'opacity-50 cursor-not-allowed'}`}>
                 <input
                   type="checkbox"
-                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-slate-300 dark:border-slate-500 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
                   checked={formData.factors.includes(factor.id)}
                   onChange={(e) => {
+                    if (!formData.factors.includes(factor.id)) return;
                     const newFactors = e.target.checked
                       ? [...formData.factors, factor.id]
                       : formData.factors.filter(f => f !== factor.id);
                     setFormData({ ...formData, factors: newFactors });
                   }}
+                  disabled={!formData.factors.includes(factor.id)}
                 />
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
                   {factor.icon}
                   <span>{factor.label}</span>
                 </div>
+                {!formData.factors.includes(factor.id) && (
+                  <span className="text-red-500 dark:text-red-400 text-sm">Fonctionnalité indisponible pour le moment</span>
+                )}
               </label>
             ))}
           </div>
@@ -230,7 +235,7 @@ export default function PredictionForm({ onPredictionResult }: PredictionFormPro
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full mt-6 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+        className="w-full mt-6 px-4 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
       >
         {isLoading ? (
           <>

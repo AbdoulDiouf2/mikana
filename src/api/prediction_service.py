@@ -70,18 +70,22 @@ class Alert(BaseModel):
     date: Optional[str] = None
 
 @app.get("/api/establishments")
-async def get_establishments():
+async def get_establishments(db: Session = Depends(get_db)):
     try:
-        establishments = predicteur.df_historique['ETBDES'].unique().tolist()
-        return {"establishments": establishments}
+        query = "SELECT DISTINCT etablissement FROM commandes"
+        etablissement = db.execute(query).fetchall()
+        establishments_list = [row[0] for row in etablissement]
+        return {"establishments": establishments_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/linen-types")
-async def get_linen_types():
+async def get_linen_types(db: Session = Depends(get_db)):
     try:
-        linen_types = predicteur.df_historique['ARTDES'].unique().tolist()
-        return {"linenTypes": linen_types}
+        query = "SELECT DISTINCT article FROM commandes"
+        linen_types = db.execute(query).fetchall()
+        linen_types_list = [row[0] for row in linen_types]
+        return {"linenTypes": linen_types_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -355,6 +359,7 @@ async def get_weather_impact(establishment: str = None, linenType: str = None):
     except Exception as e:
         print(f"❌ Erreur lors de l'analyse de l'impact météorologique: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 
+
 
 @app.get("/api/articles")
 async def get_articles(db: Session = Depends(get_db)):

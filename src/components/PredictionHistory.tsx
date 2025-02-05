@@ -13,6 +13,8 @@ import {
   Typography,
   Tooltip,
   CircularProgress,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   PictureAsPdf as PdfIcon,
@@ -42,6 +44,7 @@ interface PredictionHistoryRef {
 }
 
 const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProps>((_props, ref) => {
+  const theme = useTheme();
   const [history, setHistory] = useState<PredictionRecord[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -99,16 +102,13 @@ const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProp
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'excellent':
-        return '#4caf50';
-      case 'good':
-        return '#ff9800';
-      case 'warning':
-        return '#f44336';
-      default:
-        return '#2196F3';
-    }
+    const colors = {
+      excellent: theme.palette.success.main,
+      good: theme.palette.warning.main,
+      warning: theme.palette.error.main,
+      default: theme.palette.info.main
+    };
+    return colors[status as keyof typeof colors] || colors.default;
   };
 
   const handleRefresh = () => {
@@ -120,17 +120,31 @@ const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProp
   }));
 
   return (
-    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+    <Paper 
+      sx={{ 
+        width: '100%', 
+        overflow: 'hidden',
+        bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : '#fff',
+      }}
+    >
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
           <CircularProgress />
-        </div>
+        </Box>
       ) : (
-        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">Historique des prédictions</Typography>
+        <Box sx={{ 
+          p: 2, 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          borderBottom: 1,
+          borderColor: 'divider'
+        }}>
+          <Typography variant="h6" color="text.primary">Historique des prédictions</Typography>
           <Box>
             <Tooltip title="Exporter en Excel">
               <Button
+                variant="outlined"
                 startIcon={<ExcelIcon />}
                 onClick={() => handleExport('excel')}
                 sx={{ mr: 1 }}
@@ -140,13 +154,26 @@ const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProp
             </Tooltip>
             <Tooltip title="Exporter en PDF">
               <Button
+                variant="outlined"
                 startIcon={<PdfIcon />}
                 onClick={() => handleExport('pdf')}
+                sx={{ mr: 1 }}
               >
                 PDF
               </Button>
             </Tooltip>
-            <Button onClick={handleRefresh}>Rafraîchir</Button>
+            <Button 
+              variant="contained" 
+              onClick={handleRefresh}
+              sx={{
+                bgcolor: theme.palette.mode === 'dark' ? 'primary.dark' : 'primary.main',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'primary.main' : 'primary.dark',
+                }
+              }}
+            >
+              Rafraîchir
+            </Button>
           </Box>
         </Box>
       )}
@@ -155,18 +182,46 @@ const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProp
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell>Date de livraison</TableCell>
-                <TableCell>Article</TableCell>
-                <TableCell align="right">Qté commandée</TableCell>
-                <TableCell align="right">Qté prévue</TableCell>
-                <TableCell align="right">Taux</TableCell>
-                <TableCell>Statut</TableCell>
-                <TableCell>Recommandation</TableCell>
+                <TableCell sx={{ bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'background.default' }}>
+                  Date de livraison
+                </TableCell>
+                <TableCell sx={{ bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'background.default' }}>
+                  Article
+                </TableCell>
+                <TableCell align="right" sx={{ bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'background.default' }}>
+                  Qté commandée
+                </TableCell>
+                <TableCell align="right" sx={{ bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'background.default' }}>
+                  Qté prévue
+                </TableCell>
+                <TableCell align="right" sx={{ bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'background.default' }}>
+                  Taux
+                </TableCell>
+                <TableCell sx={{ bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'background.default' }}>
+                  Statut
+                </TableCell>
+                <TableCell sx={{ bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'background.default' }}>
+                  Recommandation
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {history.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow 
+                  key={row.id}
+                  sx={{ 
+                    '&:nth-of-type(odd)': {
+                      bgcolor: theme.palette.mode === 'dark' 
+                        ? alpha(theme.palette.common.white, 0.05)
+                        : alpha(theme.palette.common.black, 0.05),
+                    },
+                    '&:hover': {
+                      bgcolor: theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.common.white, 0.1)
+                        : alpha(theme.palette.common.black, 0.1),
+                    },
+                  }}
+                >
                   <TableCell>
                     {format(new Date(row.date.split(' ')[0]), 'dd/MM/yyyy', { locale: fr })}
                   </TableCell>
@@ -188,7 +243,7 @@ const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProp
                     <Box
                       sx={{
                         backgroundColor: getStatusColor(row.status),
-                        color: 'white',
+                        color: theme.palette.getContrastText(getStatusColor(row.status)),
                         padding: '4px 8px',
                         borderRadius: '4px',
                         display: 'inline-block',
@@ -214,6 +269,11 @@ const PredictionHistory = forwardRef<PredictionHistoryRef, PredictionHistoryProp
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
           labelRowsPerPage="Lignes par page"
+          sx={{
+            borderTop: 1,
+            borderColor: 'divider',
+            color: 'text.primary'
+          }}
         />
       )}
     </Paper>

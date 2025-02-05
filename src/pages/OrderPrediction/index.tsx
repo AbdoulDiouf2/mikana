@@ -398,7 +398,7 @@ export default function OrderPrediction() {
         />
         <div className="relative">
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2"
+            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center space-x-2"
             onClick={() => document.getElementById('exportMenu')?.classList.toggle('hidden')}
           >
             {isExporting ? (
@@ -415,23 +415,23 @@ export default function OrderPrediction() {
               </>
             )}
           </button>
-          <div id="exportMenu" className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden z-10">
+          <div id="exportMenu" className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-md shadow-lg hidden z-10 border border-gray-200 dark:border-slate-700">
             <div className="py-1">
               <button
                 onClick={() => handleExport('pdf')}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
               >
                 Exporter en PDF
               </button>
               <button
                 onClick={() => handleExport('excel')}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
               >
                 Exporter en Excel
               </button>
               <button
                 onClick={() => handleExport('csv')}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
               >
                 Exporter en CSV
               </button>
@@ -455,31 +455,31 @@ export default function OrderPrediction() {
             chartData={chartData}
           />
         </div>
-        <div className="bg-white shadow-lg rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-2">Comparaison Détaillée</h3>
+        <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Comparaison Détaillée</h3>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+              <thead className="bg-gray-50 dark:bg-slate-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">2025 (Prédiction)</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">2024</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">2023</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">2025 (Prédiction)</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">2024</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">2023</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                 {historicalComparisons.map((comp, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {new Date(comp.date).toLocaleDateString('fr-FR')}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600 dark:text-blue-400">
                       {comp.prediction.toFixed(2)} kg
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {comp.historical2024.toFixed(2)} kg
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {comp.historical2023.toFixed(2)} kg
                     </td>
                   </tr>
@@ -510,45 +510,45 @@ export default function OrderPrediction() {
 
       <div className="mt-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Historique des Prédictions</h2>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Historique des Prédictions</h2>
           <button
             onClick={clearPredictionHistory}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
+            className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-md hover:bg-red-700 dark:hover:bg-red-600 transition-colors duration-200"
           >
             Effacer l'historique
           </button>
         </div>
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+        <div className="bg-white dark:bg-slate-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700">
           {predictionHistory.length > 0 ? (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-100">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+              <thead className="bg-gray-100 dark:bg-slate-700">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Date de prédiction</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Établissement</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Type de Linge</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Prédictions</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date de prédiction</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Établissement</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Type de Linge</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Prédictions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                 {predictionHistory.map((history, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-slate-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {new Date(history.date).toLocaleString('fr-FR')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {history.establishment}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {history.linenType}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="space-y-1">
                         {history.predictions.map((pred, pidx) => (
                           <div key={pidx} className="flex items-center space-x-2">
-                            <span className="text-gray-600">
+                            <span className="text-gray-600 dark:text-gray-400">
                               {new Date(pred.date).toLocaleDateString('fr-FR')}:
                             </span>
-                            <span className="font-medium text-blue-600">
+                            <span className="font-medium text-blue-600 dark:text-blue-400">
                               {pred.value} kg
                             </span>
                           </div>
@@ -560,7 +560,7 @@ export default function OrderPrediction() {
               </tbody>
             </table>
           ) : (
-            <div className="p-8 text-center text-gray-500">
+            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
               Aucun historique de prédiction disponible
             </div>
           )}
